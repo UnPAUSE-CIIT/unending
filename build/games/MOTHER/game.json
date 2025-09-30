@@ -1,0 +1,16 @@
+{
+	"name": "mother?",
+	"description": "you have to leave. you're not supposed to be here.",
+	"genres": [
+		"Horror",
+		"Point-and-click"
+	],
+	"developers": [
+		"zsfer"
+	],
+	"supported_controls": [
+		"kbm"
+	],
+	"download_link": "https://zsfer.itch.io/mother",
+	"game_file": "mother.exe"
+}
