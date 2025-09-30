@@ -78,17 +78,12 @@ main :: proc() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 
-		rl.DrawText(fmt.ctprint(currently_selected), 10, 260, 20, rl.WHITE)
-
 		if len(g_games) > 0 {
-			rl.DrawText(fmt.ctprint(g_games[currently_selected].name), 10, 280, 20, rl.WHITE)
-			rl.DrawText(
-				fmt.ctprint(g_games[currently_selected].description),
-				10,
-				300,
-				20,
-				rl.WHITE,
-			)
+			name := fmt.ctprint(g_games[currently_selected].name)
+			desc := fmt.ctprint(g_games[currently_selected].description)
+			center := (rl.GetScreenWidth() / 2)
+			rl.DrawText(name, center - rl.MeasureText(name, 20) / 2, 280, 20, rl.WHITE)
+			rl.DrawText(desc, center - rl.MeasureText(desc, 20) / 2, 300, 20, rl.WHITE)
 		}
 
 		rl.EndDrawing()
