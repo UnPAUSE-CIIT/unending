@@ -1,0 +1,17 @@
+{
+	"name": "Risk of Fail",
+	"description": "Fend off schoolwork and deadlines in this homework killing simulator!",
+	"genres": [
+		"Roguelike",
+		"Shooter"
+	],
+	"developers": [
+		"BYTES"
+	],
+	"supported_controls": [
+		"kbm",
+		"controller"
+	],
+	"download_link": "https://sbsonk.itch.io/risk-of-fail",
+	"game_file": "RiskOfFail.exe"
+}

@@ -2,6 +2,7 @@ package main
 import "core:encoding/json"
 import "core:fmt"
 import "core:log"
+import la "core:math/linalg"
 import "core:os"
 
 import rl "vendor:raylib"
@@ -17,6 +18,7 @@ Game :: struct {
 }
 
 g_games := make([dynamic]Game)
+currently_selected: int = 0
 
 load_all_games :: proc() {
 	dir_handle, dir_err := os.open("build/games")
@@ -43,7 +45,7 @@ load_all_games :: proc() {
 		game_info: Game
 		json_err := json.unmarshal(game_info_data, &game_info)
 		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
-		log.info(game_info)
+		append(&g_games, game_info)
 	}
 }
 
@@ -52,14 +54,37 @@ main :: proc() {
 	context.logger = logger
 	load_all_games()
 
-	rl.InitWindow(800, 600, "UnEnding")
+	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), "UnEnding")
 	defer rl.CloseWindow()
 
+	rl.SetTargetFPS(60)
+	rl.ToggleBorderlessWindowed()
+
 	for !rl.WindowShouldClose() {
+		// :Update
+		if rl.IsKeyPressed(.A) {
+			currently_selected = (currently_selected - 1 + len(g_games)) % len(g_games)
+		}
+		if rl.IsKeyPressed(.D) {
+			currently_selected = (currently_selected + 1) % len(g_games)
+		}
+
+		// :Draw
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 
-		rl.DrawText("UnPAUSing the Nation", 150, 280, 20, rl.WHITE)
+		rl.DrawText(fmt.ctprint(currently_selected), 10, 260, 20, rl.WHITE)
+
+		if len(g_games) > 0 {
+			rl.DrawText(fmt.ctprint(g_games[currently_selected].name), 10, 280, 20, rl.WHITE)
+			rl.DrawText(
+				fmt.ctprint(g_games[currently_selected].description),
+				10,
+				300,
+				20,
+				rl.WHITE,
+			)
+		}
 
 		rl.EndDrawing()
 		free_all(context.temp_allocator)

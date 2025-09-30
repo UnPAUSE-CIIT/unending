@@ -1,0 +1,17 @@
+{
+	"name": "Mutiny",
+	"description": "Take your anger out on your friends by — that's right — BOMBING THEM! Mutiny is a local multiplayer game that can support up to TEN players! You can play with your weapon of choice (keyboard & mouse or controller).",
+	"genres": [
+		"Local Multiplayer",
+		"Platformer"
+	],
+	"developers": [
+		"Argumentative Engineering"
+	],
+	"supported_controls": [
+		"kbm",
+		"controller"
+	],
+	"download_link": "https://zsfer.itch.io/mutiny",
+	"game_file": "Mutiny.exe"
+}
