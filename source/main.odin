@@ -49,6 +49,9 @@ load_all_games :: proc() {
 	}
 }
 
+move_camera :: proc(i: int) {
+}
+
 main :: proc() {
 	logger := log.create_console_logger()
 	context.logger = logger
@@ -62,11 +65,13 @@ main :: proc() {
 
 	for !rl.WindowShouldClose() {
 		// :Update
-		if rl.IsKeyPressed(.A) {
+		if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) {
 			currently_selected = (currently_selected - 1 + len(g_games)) % len(g_games)
+			move_camera(currently_selected)
 		}
-		if rl.IsKeyPressed(.D) {
+		if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
 			currently_selected = (currently_selected + 1) % len(g_games)
+			move_camera(currently_selected)
 		}
 
 		// :Draw
