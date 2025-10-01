@@ -1,0 +1,16 @@
+{
+	"name": "Ordinary Hour",
+	"description": "A very short game about delivering foods in one beautiful town! After Noah's move out to the new town, his uncle ask him to help with his restaurant \"Diner Devil\", At this hour Noah's task is to deliver food to all those people who's hungry! Remember not all these people aren't strangers.",
+	"genres": [
+		"Adventure",
+		"Delivery Game"
+	],
+	"developers": [
+		"Jurou Kohishirou"
+	],
+	"supported_controls": [
+		"kbm"
+	],
+	"download_link": "https://jurou-kohishiro.itch.io/ordinary-hour",
+	"game_file": "OrdinaryHour.exe"
+}
