@@ -9,6 +9,7 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
+TITLE :: "UnEnding v0.0.3"
 V2f :: [2]f32
 V3f :: [3]f32
 
@@ -81,10 +82,11 @@ move_camera :: proc(i: int, camera: ^rl.Camera3D) {
 	trg_pos := V3f{f32(i) * BOX_OFFSETS, 0.0, 0.0}
 
 	if is_viewing_game_details {
-		trg_pos.x -= 1.5
+		trg_pos.x -= 1.9
+		trg_pos.y += 0.3
 	}
 
-	camera_target_position = V3f{trg_pos.x, 0, 5}
+	camera_target_position = V3f{trg_pos.x, trg_pos.y, 5}
 	do_camera_move = true
 	current_tab = .General
 }
@@ -179,7 +181,7 @@ main :: proc() {
 	context.logger = logger
 
 	rl.SetConfigFlags({.MSAA_4X_HINT, .FULLSCREEN_MODE, .VSYNC_HINT})
-	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), "UnEnding")
+	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), TITLE)
 	defer rl.CloseWindow()
 
 	rl.SetExitKey(.F10)
@@ -272,7 +274,7 @@ main :: proc() {
 			rl.WHITE,
 		)
 
-		rl.DrawTextEx(title_font, "UnEnding v0.5.0", {10, 10}, 24, 2, {255, 255, 255, 50})
+		rl.DrawTextEx(title_font, TITLE, {10, 10}, 24, 2, {255, 255, 255, 50})
 
 		// :bottom bar
 		bar_height := i32(72)
