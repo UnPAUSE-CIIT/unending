@@ -1,7 +1,7 @@
 BUILD_DIR = ./build
 TARGET = unending
 
-FLAGS = -vet-style -vet-semicolon
+FLAGS = -vet-style -vet-semicolon -o:speed
 
 .PHONY: all build
 all: build run

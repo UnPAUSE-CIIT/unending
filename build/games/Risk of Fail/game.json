@@ -1,6 +1,6 @@
 {
 	"name": "Risk of Fail",
-	"description": "Fend off schoolwork and deadlines in this homework killing simulator!",
+	"description": "Fend off schoolwork and deadlines in this homework ~~killing~~ finishing simulator!\nA game made by the BYTES Club (2022-2024) from CIIT Senior High School.\nDeadlines are incoming and assignments are not finished, will you survive this battle for grades and deadlines?\nBattle through swathes of enemies in the horde mode! Use your weapons to efficiently take out those pesky assignments on time!\nScavenge for more stationary to fight off the incoming tide of deadlines by exploring the level! Find collectibles hidden and scattered throughout the school!",
 	"genres": [
 		"Roguelike",
 		"Shooter"
@@ -8,9 +8,24 @@
 	"developers": [
 		"BYTES"
 	],
+	"members": [
+		"Stanley Gabrielle Buenaventura",
+		"Matthew Mesia",
+		"Marcus Philip Yap",
+		"Zahir Capoquian",
+		"Joshua Darel Busa",
+		"Richmond Matthew Almuete",
+		"Audric Verne Andrada",
+		"Shalia Mae Diaz",
+		"Ron Edward Eduarte",
+		"Johann Margarette Locsin",
+		"Kristel Cassandra De San Jose",
+		"John Edward Tumlos",
+		"Charles Violante",
+		"Nathan Josh Alilam"
+	],
 	"supported_controls": [
-		"kbm",
-		"controller"
+		"kbm"
 	],
 	"download_link": "https://sbsonk.itch.io/risk-of-fail",
 	"game_file": "RiskOfFail.exe"

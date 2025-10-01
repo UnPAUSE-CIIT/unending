@@ -1,11 +1,18 @@
 {
 	"name": "Deep Space Tavern",
-	"description": "Join Skellington as he retires as a skeleton monster and starts his own tavern business venture with Ser Voe,\na robot who accidentally opened a portal to his dungeon. Serve adventurers food that is out of this world, literally, and cook using the latest technology forged in an era yet to come.",
+	"description": "Join Skellington as he retires as a skeleton monster and starts his own tavern business venture with Ser Voe, a robot who accidentally opened a portal to his dungeon. Serve adventurers food that is out of this world, literally, and cook using the latest technology forged in an era yet to come.",
 	"genres": [
 		"Cooking Simulation"
 	],
 	"developers": [
 		"Space Monkeys Studio"
+	],
+	"members": [
+		"Anton Angelo Frio",
+		"Jacob Nathaniel Lopez",
+		"Michaela Vivienne Santiago",
+		"Emer Joseph Tarlenco",
+		"Angela Mae Visnar"
 	],
 	"supported_controls": [
 		"kbm"

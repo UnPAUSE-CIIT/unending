@@ -5,6 +5,7 @@ import "core:log"
 import la "core:math/linalg"
 import "core:os"
 import "core:strings"
+import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
@@ -18,6 +19,7 @@ Game :: struct {
 	description:        string,
 	genres:             []string,
 	developers:         []string,
+	members:            []string,
 	supported_controls: []string,
 	download_link:      string,
 	game_file:          string,
@@ -28,12 +30,16 @@ Game :: struct {
 
 g_games := make([dynamic]Game)
 currently_selected: int = 0
+view_game_details := false
+
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
 
 title_font: rl.Font
 body_font: rl.Font
 body_font_italic: rl.Font
+
+itch_tex: rl.Texture2D
 
 load_all_games :: proc() {
 	dir_handle, dir_err := os.open("build/games")
@@ -72,8 +78,14 @@ load_all_games :: proc() {
 
 move_camera :: proc(i: int, camera: ^rl.Camera3D) {
 	trg_pos := V3f{f32(i) * BOX_OFFSETS, 0.0, 0.0}
+
+	if view_game_details {
+		trg_pos.x -= 1.5
+	}
+
 	camera_target_position = V3f{trg_pos.x, 0, 5}
 	do_camera_move = true
+	current_tab = .General
 }
 
 draw_basic_details :: proc(game: Game) {
@@ -83,7 +95,7 @@ draw_basic_details :: proc(game: Game) {
 
 	center := (rl.GetScreenWidth() / 2)
 	line_width := rl.MeasureTextEx(title_font, name, 48, 2)
-	y := la.floor(f32(rl.GetScreenHeight()) * .80)
+	y := la.floor(f32(rl.GetScreenHeight()) * .78)
 	rl.DrawTextEx(title_font, name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
 
 	y += 50
@@ -95,6 +107,72 @@ draw_basic_details :: proc(game: Game) {
 	rl.DrawTextEx(body_font_italic, tags, {f32(center) - line_width.x / 2, y}, 18, 1, rl.WHITE)
 }
 
+Detail_Tab :: enum {
+	General,
+	Credits,
+}
+current_tab: Detail_Tab = .General
+
+draw_complete_details :: proc(game: Game) {
+	// content
+	x := la.floor(f32(rl.GetScreenWidth()) * 0.1)
+	y := la.floor(f32(rl.GetScreenHeight()) * 0.2)
+
+	padding := f32(30)
+
+	draw_button(
+		text = "Info",
+		bounds = rl.Rectangle{x + 5, y - padding - 64, 100, 54},
+		on_click = proc() {
+			current_tab = .General
+		},
+	)
+	draw_button(
+		text = "Credits",
+		bounds = rl.Rectangle{x + 110, y - padding - 64, 100, 54},
+		on_click = proc() {
+			current_tab = .Credits
+		},
+	)
+
+	rl.DrawRectangleRounded(
+		rl.Rectangle{x - padding, y - padding, 900 + padding * 2, f32(rl.GetScreenHeight()) * 0.7},
+		0.05,
+		18,
+		{0, 0, 0, 50},
+	)
+
+	// header
+	itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
+	rl.DrawTexturePro(itch_tex, rl.Rectangle{0, 0, 740, 228}, itch_rec, {0, 0}, 0, rl.WHITE)
+
+	name := fmt.ctprint(game.name)
+	devs := fmt.ctprint(strings.join(game.developers, ", ", context.temp_allocator))
+
+	rl.DrawTextEx(title_font, name, {x, y}, 52, 2, rl.WHITE)
+	y += 52 + 18
+
+	rl.DrawTextEx(body_font_italic, devs, {x, y}, 18, 1, rl.WHITE)
+	y += 48
+
+	if current_tab == .General {
+		desc := fmt.ctprint(game.description)
+		tags := fmt.ctprint(strings.join(game.genres, ", ", context.temp_allocator))
+
+		last_y := draw_wrapped_text(body_font, game.description, {x, y}, 24, 1, 900, rl.WHITE)
+		y = last_y + 24
+
+		rl.DrawTextEx(body_font_italic, fmt.ctprintf("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
+		y += 24 + 6
+
+	} else {
+		rl.DrawTextEx(body_font_italic, "Members", {x, y}, 32, 1, rl.WHITE)
+		y += 32 + 18
+		members := fmt.ctprint(strings.join(game.members, "\n", context.temp_allocator))
+		rl.DrawTextEx(body_font, members, {x, y}, 24, 1, rl.WHITE)
+	}
+}
+
 main :: proc() {
 	logger := log.create_console_logger()
 	context.logger = logger
@@ -103,13 +181,29 @@ main :: proc() {
 	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), "UnEnding")
 	defer rl.CloseWindow()
 
+	rl.SetExitKey(.F10)
+
+	// codepoints (symbols and stuff)
+	runes := utf8.string_to_runes(
+		" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~—–",
+	)
+
 	// load fonts
-	title_font = rl.LoadFontEx("build/assets/title.ttf", 48, nil, 0)
-	body_font = rl.LoadFontEx("build/assets/body.ttf", 48, nil, 0)
-	body_font_italic = rl.LoadFontEx("build/assets/body_italic.ttf", 48, nil, 0)
+	title_font = rl.LoadFontEx("build/assets/title.ttf", 64, raw_data(runes), i32(len(runes)))
+	rl.SetTextureFilter(title_font.texture, .TRILINEAR)
+	body_font = rl.LoadFontEx("build/assets/body.ttf", 48, raw_data(runes), i32(len(runes)))
+	rl.SetTextureFilter(body_font.texture, .TRILINEAR)
+	body_font_italic = rl.LoadFontEx(
+		"build/assets/body_italic.ttf",
+		48,
+		raw_data(runes),
+		i32(len(runes)),
+	)
+	rl.SetTextureFilter(body_font_italic.texture, .TRILINEAR)
 	rl.SetTextLineSpacing(16)
 
 	bg_tex := rl.LoadTexture("build/assets/bg.png")
+	itch_tex = rl.LoadTexture("build/assets/itch.png")
 	load_all_games()
 
 	camera := rl.Camera3D {
@@ -134,6 +228,8 @@ main :: proc() {
 					20 * rl.GetFrameTime(),
 				)
 				camera.target = camera.position + V3f{0, 0, -1}
+			} else {
+				do_camera_move = false
 			}
 		}
 
@@ -144,6 +240,19 @@ main :: proc() {
 		}
 		if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
 			currently_selected = (currently_selected + 1) % len(g_games)
+			move_camera(currently_selected, &camera)
+		}
+		if rl.IsKeyPressed(.ENTER) {
+			if !view_game_details {
+				view_game_details = true
+				move_camera(currently_selected, &camera)
+			} else {
+				// @TODO run game
+			}
+		}
+
+		if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
+			view_game_details = false
 			move_camera(currently_selected, &camera)
 		}
 
@@ -158,6 +267,17 @@ main :: proc() {
 			rl.WHITE,
 		)
 
+		rl.DrawTextEx(title_font, "UnEnding v0.5.0", {10, 10}, 24, 2, {255, 255, 255, 50})
+
+		bar_height := i32(72)
+		rl.DrawRectangle(
+			0,
+			rl.GetScreenHeight() - bar_height,
+			rl.GetScreenWidth(),
+			bar_height,
+			{0, 0, 0, 180},
+		)
+
 		rl.BeginMode3D(camera)
 		for &game, i in g_games {
 			if i == currently_selected {
@@ -166,9 +286,14 @@ main :: proc() {
 				game.rotation = 0
 			}
 
+			if view_game_details && i != currently_selected {
+				continue
+			}
+
+			// @TODO use lit shader with basic directional light?
 			rl.DrawModelEx(
 				game.model,
-				V3f{f32(i) * BOX_OFFSETS, 0, 0},
+				V3f{f32(i) * BOX_OFFSETS, 0.2, 0},
 				V3f{0, 1, 0},
 				game.rotation,
 				V3f(1.0),
@@ -178,10 +303,14 @@ main :: proc() {
 		rl.EndMode3D()
 
 		if len(g_games) > 0 {
-			draw_basic_details(g_games[currently_selected])
+			curr_game := g_games[currently_selected]
+			if view_game_details {
+				draw_complete_details(curr_game)
+			} else {
+				draw_basic_details(curr_game)
+			}
 		}
 
-		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
 		free_all(context.temp_allocator)
 	}
@@ -190,6 +319,8 @@ main :: proc() {
 		rl.UnloadModel(game.model)
 		rl.UnloadTexture(game.texture)
 	}
+	rl.UnloadTexture(bg_tex)
+	rl.UnloadTexture(itch_tex)
 	rl.UnloadFont(title_font)
 	rl.UnloadFont(body_font)
 	rl.UnloadFont(body_font_italic)
@@ -197,4 +328,88 @@ main :: proc() {
 	rl.CloseWindow()
 
 	free_all(context.temp_allocator)
+}
+
+draw_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
+	mouse_pos := rl.GetMousePosition()
+	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
+
+	base_col := rl.Color{0, 0, 0, 50}
+	if is_hovered {
+		base_col = rl.BLACK
+	}
+
+	rl.DrawRectangleRounded(bounds, 0.3, 5, base_col)
+	line_width := rl.MeasureTextEx(body_font, text, 24, 2)
+	rl.DrawTextEx(
+		body_font,
+		text,
+		{bounds.x + bounds.width / 2 - line_width.x / 2, bounds.y + 12},
+		24,
+		2,
+		rl.WHITE,
+	)
+
+	if is_hovered && rl.IsMouseButtonPressed(.LEFT) {
+		if on_click != nil {
+			on_click()
+		}
+	}
+}
+
+draw_wrapped_text :: proc(
+	font: rl.Font,
+	text: string,
+	pos: rl.Vector2,
+	font_size: f32,
+	spacing: f32,
+	max_width: f32,
+	color: rl.Color,
+) -> f32 {
+	words := strings.split(text, " ")
+	line := ""
+	line_y := pos.y
+	line_height: f32
+
+	for word in words {
+		// simulate adding the next word
+		candidate :=
+			line == "" ? word : strings.join({line, word}, sep = " ", allocator = context.temp_allocator)
+
+		size := rl.MeasureTextEx(font, fmt.ctprintf(candidate), font_size, spacing)
+		line_height = size.y
+		if size.x > max_width {
+			// draw current line
+			rl.DrawTextEx(
+				font,
+				fmt.ctprintf(line),
+				rl.Vector2{pos.x, line_y},
+				font_size,
+				spacing,
+				color,
+			)
+			// start new line
+			line = word
+			line_y += line_height + 5
+		} else {
+			line = candidate
+		}
+	}
+
+	// draw last line
+	if line != "" {
+		size := rl.MeasureTextEx(font, fmt.ctprintf(line), font_size, spacing)
+		line_height = size.y
+
+		rl.DrawTextEx(
+			font,
+			fmt.ctprintf(line),
+			rl.Vector2{pos.x, line_y},
+			font_size,
+			spacing,
+			color,
+		)
+	}
+
+	return line_y + line_height
 }

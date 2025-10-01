@@ -1,12 +1,20 @@
 {
 	"name": "Scroll of Perception",
-	"description": "A puzzle platformer game where you can change the perspective mode into 3D to 2D or vice-versa.\nYou also have the ability to rotate the camera from left to the right synergizing with your ability to switch perspective.",
+	"description": "A puzzle platformer game where you can change the perspective mode into 3D to 2D or vice-versa. You also have the ability to rotate the camera from left to the right synergizing with your ability to switch perspective.",
 	"genres": [
 		"Platformer",
 		"Puzzle"
 	],
 	"developers": [
 		"Nocturnal Entertainments"
+	],
+	"members": [
+		"Matthew Angelo Cabusay",
+		"Jacob Cammayo",
+		"Jezreel Jorolan",
+		"Hunch Lorenzana",
+		"Mark Riquez",
+		"Earl Josh Santos"
 	],
 	"supported_controls": [
 		"kbm"
