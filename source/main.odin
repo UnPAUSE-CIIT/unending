@@ -30,7 +30,7 @@ Game :: struct {
 
 g_games := make([dynamic]Game)
 currently_selected: int = 0
-view_game_details := false
+is_viewing_game_details := false
 
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
@@ -38,6 +38,7 @@ do_camera_move := false
 title_font: rl.Font
 body_font: rl.Font
 body_font_italic: rl.Font
+keys_font: rl.Font
 
 itch_tex: rl.Texture2D
 
@@ -79,7 +80,7 @@ load_all_games :: proc() {
 move_camera :: proc(i: int, camera: ^rl.Camera3D) {
 	trg_pos := V3f{f32(i) * BOX_OFFSETS, 0.0, 0.0}
 
-	if view_game_details {
+	if is_viewing_game_details {
 		trg_pos.x -= 1.5
 	}
 
@@ -200,7 +201,11 @@ main :: proc() {
 		i32(len(runes)),
 	)
 	rl.SetTextureFilter(body_font_italic.texture, .TRILINEAR)
+	keys_font = rl.LoadFontEx("build/assets/keys.ttf", 32, raw_data(runes), i32(len(runes)))
+	rl.SetTextureFilter(keys_font.texture, .TRILINEAR)
+
 	rl.SetTextLineSpacing(16)
+
 
 	bg_tex := rl.LoadTexture("build/assets/bg.png")
 	itch_tex = rl.LoadTexture("build/assets/itch.png")
@@ -243,8 +248,8 @@ main :: proc() {
 			move_camera(currently_selected, &camera)
 		}
 		if rl.IsKeyPressed(.ENTER) {
-			if !view_game_details {
-				view_game_details = true
+			if !is_viewing_game_details {
+				is_viewing_game_details = true
 				move_camera(currently_selected, &camera)
 			} else {
 				// @TODO run game
@@ -252,7 +257,7 @@ main :: proc() {
 		}
 
 		if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
-			view_game_details = false
+			is_viewing_game_details = false
 			move_camera(currently_selected, &camera)
 		}
 
@@ -269,13 +274,21 @@ main :: proc() {
 
 		rl.DrawTextEx(title_font, "UnEnding v0.5.0", {10, 10}, 24, 2, {255, 255, 255, 50})
 
+		// :bottom bar
 		bar_height := i32(72)
-		rl.DrawRectangle(
-			0,
-			rl.GetScreenHeight() - bar_height,
-			rl.GetScreenWidth(),
-			bar_height,
-			{0, 0, 0, 180},
+		bar_pos := V2f{0, f32(rl.GetScreenHeight() - bar_height)}
+		rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
+		bottom_bar_text: cstring = "A/D - navigate\t\tEnter - view game"
+		if is_viewing_game_details {
+			bottom_bar_text = "Enter - launch game\t\tEsc/Backspace - back to selection"
+		}
+		rl.DrawTextEx(
+			title_font,
+			bottom_bar_text,
+			{bar_pos.x + 10, bar_pos.y + 16},
+			32,
+			2,
+			rl.WHITE,
 		)
 
 		rl.BeginMode3D(camera)
@@ -286,7 +299,7 @@ main :: proc() {
 				game.rotation = 0
 			}
 
-			if view_game_details && i != currently_selected {
+			if is_viewing_game_details && i != currently_selected {
 				continue
 			}
 
@@ -304,7 +317,7 @@ main :: proc() {
 
 		if len(g_games) > 0 {
 			curr_game := g_games[currently_selected]
-			if view_game_details {
+			if is_viewing_game_details {
 				draw_complete_details(curr_game)
 			} else {
 				draw_basic_details(curr_game)
@@ -324,6 +337,7 @@ main :: proc() {
 	rl.UnloadFont(title_font)
 	rl.UnloadFont(body_font)
 	rl.UnloadFont(body_font_italic)
+	rl.UnloadFont(keys_font)
 
 	rl.CloseWindow()
 
