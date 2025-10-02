@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:log"
 import la "core:math/linalg"
 import "core:os"
+import "core:os/os2"
 import "core:strings"
 import "core:unicode/utf8"
 
@@ -23,6 +24,7 @@ Game :: struct {
 	members:            []string,
 	supported_controls: []string,
 	download_link:      string,
+    fullpath:           string,
 	game_file:          string,
 	model:              rl.Model,
 	texture:            rl.Texture2D,
@@ -56,7 +58,7 @@ load_all_games :: proc() {
 	assert(err == nil, "err fetching game infos")
 	defer delete(entries, context.temp_allocator)
 
-	for entry in entries {
+	for &entry in entries {
 		if !entry.is_dir {
 			continue
 		}
@@ -74,6 +76,8 @@ load_all_games :: proc() {
 			continue
 		}
 
+        game_info.fullpath = strings.clone(entry.fullpath)
+        
 		// load model
 		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
@@ -194,6 +198,16 @@ draw_complete_details :: proc(game: Game) {
 	}
 }
 
+run_game :: proc(game: Game) {
+    game_path := fmt.tprintf("%s/%s", game.fullpath, game.game_file)
+    log.info("running game at ", game_path)
+    state, _, _, err := os2.process_exec(os2.Process_Desc{
+        command = {"umu-run", game_path},
+    }, context.temp_allocator)
+
+    assert(err == nil, fmt.tprint("error running game:", err))
+}
+
 main :: proc() {
 	logger := log.create_console_logger()
 	context.logger = logger
@@ -271,7 +285,7 @@ main :: proc() {
 				is_viewing_game_details = true
 				move_camera(currently_selected, &camera)
 			} else {
-				// @TODO run game
+                run_game(g_games[currently_selected])
 			}
 		}
 
