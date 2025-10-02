@@ -41,6 +41,7 @@ run_game_threaded :: proc(game: Game) {
     game_path := fmt.tprintf("%s/%s", game.fullpath, game.game_file)
     log.info("running game at ", game_path)
 
+    // @TODO run diff start process depending on OS
     process_handle, err := os2.process_start(os2.Process_Desc{
         command = {"umu-run", game_path},
         stdout = os2.stdout,
