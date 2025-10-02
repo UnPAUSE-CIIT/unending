@@ -27,6 +27,7 @@ Game :: struct {
 	model:              rl.Model,
 	texture:            rl.Texture2D,
 	rotation:           f32,
+	hidden:             bool,
 }
 
 g_games := make([dynamic]Game)
@@ -69,12 +70,32 @@ load_all_games :: proc() {
 		json_err := json.unmarshal(game_info_data, &game_info)
 		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
 
+		if game_info.hidden {
+			continue
+		}
+
 		// load model
 		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(fmt.ctprintf("%s/box_art.png", entry.fullpath))
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 
 		append(&g_games, game_info)
+	}
+
+	// @TODO remove when org weave is done ?
+	// force mutiny to be first in list
+	{
+		mutiny_id: int = -1
+		for game, i in g_games {
+			if game.name == "Mutiny" {
+				mutiny_id = i
+				continue
+			}
+		}
+
+		prev_one := g_games[0]
+		g_games[0] = g_games[mutiny_id]
+		g_games[mutiny_id] = prev_one
 	}
 }
 
@@ -115,9 +136,7 @@ Detail_Tab :: enum {
 	Credits,
 }
 current_tab: Detail_Tab = .General
-
 draw_complete_details :: proc(game: Game) {
-	// content
 	x := la.floor(f32(rl.GetScreenWidth()) * 0.1)
 	y := la.floor(f32(rl.GetScreenHeight()) * 0.2)
 
@@ -167,7 +186,6 @@ draw_complete_details :: proc(game: Game) {
 
 		rl.DrawTextEx(body_font_italic, fmt.ctprintf("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
 		y += 24 + 6
-
 	} else {
 		rl.DrawTextEx(body_font_italic, "Members", {x, y}, 32, 1, rl.WHITE)
 		y += 32 + 18
@@ -203,11 +221,10 @@ main :: proc() {
 		i32(len(runes)),
 	)
 	rl.SetTextureFilter(body_font_italic.texture, .TRILINEAR)
-	keys_font = rl.LoadFontEx("build/assets/keys.ttf", 32, raw_data(runes), i32(len(runes)))
-	rl.SetTextureFilter(keys_font.texture, .TRILINEAR)
+	/*keys_font = rl.LoadFontEx("build/assets/keys.ttf", 32, raw_data(runes), i32(len(runes)))
+	rl.SetTextureFilter(keys_font.texture, .TRILINEAR)*/
 
 	rl.SetTextLineSpacing(16)
-
 
 	bg_tex := rl.LoadTexture("build/assets/bg.png")
 	itch_tex = rl.LoadTexture("build/assets/itch.png")
@@ -267,6 +284,7 @@ main :: proc() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.DARKBLUE)
 
+		// @TODO replace bg with screenshot
 		rl.DrawTextureRec(
 			bg_tex,
 			rl.Rectangle{0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())},
@@ -280,6 +298,8 @@ main :: proc() {
 		bar_height := i32(72)
 		bar_pos := V2f{0, f32(rl.GetScreenHeight() - bar_height)}
 		rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
+
+		// @TODO use sprites for this, use a spritesheet or use a font?
 		bottom_bar_text: cstring = "A/D - navigate\t\tEnter - view game"
 		if is_viewing_game_details {
 			bottom_bar_text = "Enter - launch game\t\tEsc/Backspace - back to selection"
@@ -344,88 +364,4 @@ main :: proc() {
 	rl.CloseWindow()
 
 	free_all(context.temp_allocator)
-}
-
-draw_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
-	mouse_pos := rl.GetMousePosition()
-	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
-
-	base_col := rl.Color{0, 0, 0, 50}
-	if is_hovered {
-		base_col = rl.BLACK
-	}
-
-	rl.DrawRectangleRounded(bounds, 0.3, 5, base_col)
-	line_width := rl.MeasureTextEx(body_font, text, 24, 2)
-	rl.DrawTextEx(
-		body_font,
-		text,
-		{bounds.x + bounds.width / 2 - line_width.x / 2, bounds.y + 12},
-		24,
-		2,
-		rl.WHITE,
-	)
-
-	if is_hovered && rl.IsMouseButtonPressed(.LEFT) {
-		if on_click != nil {
-			on_click()
-		}
-	}
-}
-
-draw_wrapped_text :: proc(
-	font: rl.Font,
-	text: string,
-	pos: rl.Vector2,
-	font_size: f32,
-	spacing: f32,
-	max_width: f32,
-	color: rl.Color,
-) -> f32 {
-	words := strings.split(text, " ")
-	line := ""
-	line_y := pos.y
-	line_height: f32
-
-	for word in words {
-		// simulate adding the next word
-		candidate :=
-			line == "" ? word : strings.join({line, word}, sep = " ", allocator = context.temp_allocator)
-
-		size := rl.MeasureTextEx(font, fmt.ctprintf(candidate), font_size, spacing)
-		line_height = size.y
-		if size.x > max_width {
-			// draw current line
-			rl.DrawTextEx(
-				font,
-				fmt.ctprintf(line),
-				rl.Vector2{pos.x, line_y},
-				font_size,
-				spacing,
-				color,
-			)
-			// start new line
-			line = word
-			line_y += line_height + 5
-		} else {
-			line = candidate
-		}
-	}
-
-	// draw last line
-	if line != "" {
-		size := rl.MeasureTextEx(font, fmt.ctprintf(line), font_size, spacing)
-		line_height = size.y
-
-		rl.DrawTextEx(
-			font,
-			fmt.ctprintf(line),
-			rl.Vector2{pos.x, line_y},
-			font_size,
-			spacing,
-			color,
-		)
-	}
-
-	return line_y + line_height
 }
