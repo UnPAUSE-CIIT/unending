@@ -27,6 +27,7 @@ Game :: struct {
 	model:              rl.Model,
 	texture:            rl.Texture2D,
 	rotation:           f32,
+	hidden:             bool,
 }
 
 g_games := make([dynamic]Game)
@@ -69,6 +70,10 @@ load_all_games :: proc() {
 		json_err := json.unmarshal(game_info_data, &game_info)
 		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
 
+		if game_info.hidden {
+			continue
+		}
+
 		// load model
 		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(fmt.ctprintf("%s/box_art.png", entry.fullpath))
@@ -76,6 +81,19 @@ load_all_games :: proc() {
 
 		append(&g_games, game_info)
 	}
+
+	// force mutiny to be first in list
+	mutiny_id: int = -1
+	for game, i in g_games {
+		if game.name == "Mutiny" {
+			mutiny_id = i
+			continue
+		}
+	}
+
+	prev_one := g_games[0]
+	g_games[0] = g_games[mutiny_id]
+	g_games[mutiny_id] = prev_one
 }
 
 move_camera :: proc(i: int, camera: ^rl.Camera3D) {
