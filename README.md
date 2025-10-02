@@ -1,6 +1,14 @@
 # unending
 our game launcher
 
+# if you have any ideas or bug reports...
+
+create an issue! and make sure to use the proper tags for it too :D
+
+# if you want to contribute...
+
+just fork the repo and create a pull request for your changes!
+
 ### oct 2 log
 finished v0.0.3, visually all of the components should be there
 
