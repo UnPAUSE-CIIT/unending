@@ -1,6 +1,8 @@
 # unending
 our game launcher
 
+as of oct 3, the game launching is only supported on the steam deck/linux with `umu-run` (for org weave purposes)
+
 # if you have any ideas or bug reports...
 
 create an issue! and make sure to use the proper tags for it too :D

@@ -12,7 +12,7 @@ import "core:thread"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v0.0.3"
+TITLE :: "UnENDING v1.0.0"
 V2f :: [2]f32
 V3f :: [3]f32
 
@@ -317,7 +317,6 @@ main :: proc() {
         if is_game_launched {
             bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
         }
-        
 
 		rl.DrawTextEx(
 			title_font,
