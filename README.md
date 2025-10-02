@@ -6,6 +6,7 @@ our game launcher
 this game launcher was developed as a way to easily track and distribute games made by UnPAUSE members!
 
 code was written by [@zsfer](https://zsfer.itch.io)
+
 box arts were made by [@edgeworthenvy](https://edgeworthenvy.itch.io)
 
 ### steps to use the launcher
@@ -57,6 +58,8 @@ THO...
 - try creating a release build
 - 'view on itch' functionality
 - add left and right buttons
+
+---
 
 ### oct 2 log
 finished v0.0.3, visually all of the components should be there
