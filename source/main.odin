@@ -9,7 +9,7 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnEnding v0.0.3"
+TITLE :: "UnENDING v0.0.3"
 V2f :: [2]f32
 V3f :: [3]f32
 
@@ -76,7 +76,7 @@ load_all_games :: proc() {
 
 		// load model
 		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
-		game_info.texture = rl.LoadTexture(fmt.ctprintf("%s/box_art.png", entry.fullpath))
+		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 
 		append(&g_games, game_info)
@@ -113,9 +113,9 @@ move_camera :: proc(i: int, camera: ^rl.Camera3D) {
 }
 
 draw_basic_details :: proc(game: Game) {
-	name := fmt.ctprint(game.name)
-	devs := fmt.ctprint(strings.join(game.developers, ", ", context.temp_allocator))
-	tags := fmt.ctprint(strings.join(game.genres, ", ", context.temp_allocator))
+	name := to_cstr(game.name)
+	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
+	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
 	center := (rl.GetScreenWidth() / 2)
 	line_width := rl.MeasureTextEx(title_font, name, 48, 2)
@@ -168,8 +168,8 @@ draw_complete_details :: proc(game: Game) {
 	itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
 	rl.DrawTexturePro(itch_tex, rl.Rectangle{0, 0, 740, 228}, itch_rec, {0, 0}, 0, rl.WHITE)
 
-	name := fmt.ctprint(game.name)
-	devs := fmt.ctprint(strings.join(game.developers, ", ", context.temp_allocator))
+	name := to_cstr(game.name)
+	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
 
 	rl.DrawTextEx(title_font, name, {x, y}, 52, 2, rl.WHITE)
 	y += 52 + 18
@@ -178,18 +178,18 @@ draw_complete_details :: proc(game: Game) {
 	y += 48
 
 	if current_tab == .General {
-		desc := fmt.ctprint(game.description)
-		tags := fmt.ctprint(strings.join(game.genres, ", ", context.temp_allocator))
+		desc := to_cstr(game.description)
+		tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
 		last_y := draw_wrapped_text(body_font, game.description, {x, y}, 24, 1, 900, rl.WHITE)
 		y = last_y + 24
 
-		rl.DrawTextEx(body_font_italic, fmt.ctprintf("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
+		rl.DrawTextEx(body_font_italic, to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
 		y += 24 + 6
 	} else {
 		rl.DrawTextEx(body_font_italic, "Members", {x, y}, 32, 1, rl.WHITE)
 		y += 32 + 18
-		members := fmt.ctprint(strings.join(game.members, "\n", context.temp_allocator))
+		members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
 		rl.DrawTextEx(body_font, members, {x, y}, 24, 1, rl.WHITE)
 	}
 }
@@ -300,10 +300,9 @@ main :: proc() {
 		rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
 
 		// @TODO use sprites for this, use a spritesheet or use a font?
-		bottom_bar_text: cstring = "A/D - navigate\t\tEnter - view game"
-		if is_viewing_game_details {
-			bottom_bar_text = "Enter - launch game\t\tEsc/Backspace - back to selection"
-		}
+		bottom_bar_text: cstring =
+			!is_viewing_game_details ? "A/D - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
+
 		rl.DrawTextEx(
 			title_font,
 			bottom_bar_text,
