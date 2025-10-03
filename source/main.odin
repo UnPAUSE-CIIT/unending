@@ -6,9 +6,9 @@ import la "core:math/linalg"
 import "core:os"
 import "core:os/os2"
 import "core:strings"
-import "core:unicode/utf8"
 import "core:sync/chan"
 import "core:thread"
+import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
@@ -26,7 +26,7 @@ Game :: struct {
 	members:            []string,
 	supported_controls: []string,
 	download_link:      string,
-    fullpath:           string,
+	fullpath:           string,
 	game_file:          string,
 	model:              rl.Model,
 	texture:            rl.Texture2D,
@@ -78,8 +78,8 @@ load_all_games :: proc() {
 			continue
 		}
 
-        game_info.fullpath = strings.clone(entry.fullpath)
-        
+		game_info.fullpath = strings.clone(entry.fullpath)
+
 		// load model
 		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
@@ -207,9 +207,10 @@ main :: proc() {
 	rl.SetConfigFlags({.MSAA_4X_HINT, .FULLSCREEN_MODE, .VSYNC_HINT})
 	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), TITLE)
 	defer rl.CloseWindow()
+
 	rl.SetExitKey(.F10)
 
-    setup_game_runner()
+	setup_game_runner()
 
 	// :font loading
 
@@ -264,32 +265,32 @@ main :: proc() {
 		}
 
 		// :Update
-        if !is_game_launched {
-            if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) {
-                currently_selected = (currently_selected - 1 + len(g_games)) % len(g_games)
-                move_camera(currently_selected, &camera)
-            }
-            if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
-                currently_selected = (currently_selected + 1) % len(g_games)
-                move_camera(currently_selected, &camera)
-            }
-            if rl.IsKeyPressed(.ENTER) {
-                if !is_viewing_game_details {
-                    is_viewing_game_details = true
-                } else {
-                    run_game_threaded(g_games[currently_selected])
-                    is_viewing_game_details = false
-                }
-                move_camera(currently_selected, &camera)
-            }
+		if !is_game_launched {
+			if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) {
+				currently_selected = (currently_selected - 1 + len(g_games)) % len(g_games)
+				move_camera(currently_selected, &camera)
+			}
+			if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
+				currently_selected = (currently_selected + 1) % len(g_games)
+				move_camera(currently_selected, &camera)
+			}
+			if rl.IsKeyPressed(.ENTER) {
+				if !is_viewing_game_details {
+					is_viewing_game_details = true
+				} else {
+					run_game_threaded(g_games[currently_selected])
+					is_viewing_game_details = false
+				}
+				move_camera(currently_selected, &camera)
+			}
 
-            if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
-                is_viewing_game_details = false
-                move_camera(currently_selected, &camera)
-            }
-        } else {
-            wait_for_game_close()
-        }
+			if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
+				is_viewing_game_details = false
+				move_camera(currently_selected, &camera)
+			}
+		} else {
+			wait_for_game_close()
+		}
 
 		// :Draw
 		rl.BeginDrawing()
@@ -313,10 +314,10 @@ main :: proc() {
 		// @TODO use sprites for this, use a spritesheet or use a font?
 		bottom_bar_text: cstring =
 			!is_viewing_game_details ? "A/D - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
-        
-        if is_game_launched {
-            bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
-        }
+
+		if is_game_launched {
+			bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
+		}
 
 		rl.DrawTextEx(
 			title_font,
@@ -330,7 +331,7 @@ main :: proc() {
 		rl.BeginMode3D(camera)
 		for &game, i in g_games {
 			if i == currently_selected {
-                rot_speed: f32 = is_game_launched ? 900 : 30
+				rot_speed: f32 = is_game_launched ? 900 : 30
 				game.rotation += rl.GetFrameTime() * rot_speed
 			} else {
 				game.rotation = 0
@@ -375,7 +376,7 @@ main :: proc() {
 	rl.UnloadFont(body_font)
 	rl.UnloadFont(body_font_italic)
 	rl.UnloadFont(keys_font)
-    destroy_game_runner()
+	destroy_game_runner()
 
 	rl.CloseWindow()
 
