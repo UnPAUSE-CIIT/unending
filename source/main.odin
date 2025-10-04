@@ -12,9 +12,10 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.0.1"
+TITLE :: "UnENDING v1.1.0"
 V2f :: [2]f32
 V3f :: [3]f32
+V2i :: [2]i32
 
 BOX_OFFSETS :: 4.0
 
@@ -38,6 +39,7 @@ g_games := make([dynamic]Game)
 currently_selected: int = 0
 is_viewing_game_details := false
 
+game_camera: rl.Camera3D
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
 
@@ -98,8 +100,12 @@ load_all_games :: proc() {
 	}
 }
 
-move_camera :: proc(i: int, camera: ^rl.Camera3D) {
-	trg_pos := V3f{f32(i) * BOX_OFFSETS, 0.0, 0.0}
+move_dir :: proc(dir: int) {
+	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
+	move_camera_to_curr()
+}
+move_camera_to_curr :: proc() {
+	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
 
 	if is_viewing_game_details {
 		trg_pos.x -= 1.9
@@ -200,6 +206,31 @@ draw_complete_details :: proc(game: Game) {
 	}
 }
 
+draw_nav_buttons :: proc() {
+	img := textures["left_chev"]
+	y := f32(rl.GetScreenHeight() / 2 - img.height / 2)
+	alpha: V2i = {20, 50}
+
+	draw_image_button(
+		image = textures["left_chev"],
+		bounds = rl.Rectangle{20, y, 128, 128},
+		alpha = alpha,
+		on_click = proc() {
+			move_dir(-1)
+		},
+	)
+
+	right := f32(rl.GetScreenWidth() - 20 - img.width)
+	draw_image_button(
+		image = textures["right_chev"],
+		bounds = rl.Rectangle{right, y, 128, 128},
+		alpha = alpha,
+		on_click = proc() {
+			move_dir(1)
+		},
+	)
+}
+
 main :: proc() {
 	// mac doesnt use app dir as working directory
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
@@ -227,7 +258,7 @@ main :: proc() {
 	load_texture("right_chev")
 	load_all_games()
 
-	camera := rl.Camera3D {
+	game_camera = rl.Camera3D {
 		up         = V3f{0.0, 1.0, 0.0},
 		target     = camera_target_position,
 		position   = V3f{0.0, 0.0, 5.0},
@@ -238,17 +269,17 @@ main :: proc() {
 	rl.SetTargetFPS(120)
 
 	for !rl.WindowShouldClose() {
-		rl.UpdateCamera(&camera, .CUSTOM)
+		rl.UpdateCamera(&game_camera, .CUSTOM)
 
 		if do_camera_move {
-			dist := rl.Vector3Distance(camera.position, camera_target_position)
+			dist := rl.Vector3Distance(game_camera.position, camera_target_position)
 			if dist >= 0.01 {
-				camera.position = la.lerp(
-					camera.position,
+				game_camera.position = la.lerp(
+					game_camera.position,
 					camera_target_position,
 					20 * rl.GetFrameTime(),
 				)
-				camera.target = camera.position + V3f{0, 0, -1}
+				game_camera.target = game_camera.position + V3f{0, 0, -1}
 			} else {
 				do_camera_move = false
 			}
@@ -257,12 +288,10 @@ main :: proc() {
 		// :Update
 		if !is_game_launched {
 			if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) {
-				currently_selected = (currently_selected - 1 + len(g_games)) % len(g_games)
-				move_camera(currently_selected, &camera)
+				move_dir(-1)
 			}
 			if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
-				currently_selected = (currently_selected + 1) % len(g_games)
-				move_camera(currently_selected, &camera)
+				move_dir(1)
 			}
 			if rl.IsKeyPressed(.ENTER) {
 				if !is_viewing_game_details {
@@ -271,12 +300,12 @@ main :: proc() {
 					run_game_threaded(g_games[currently_selected])
 					is_viewing_game_details = false
 				}
-				move_camera(currently_selected, &camera)
+				move_camera_to_curr()
 			}
 
 			if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
 				is_viewing_game_details = false
-				move_camera(currently_selected, &camera)
+				move_camera_to_curr()
 			}
 		} else {
 			wait_for_game_close()
@@ -318,7 +347,7 @@ main :: proc() {
 			rl.WHITE,
 		)
 
-		rl.BeginMode3D(camera)
+		rl.BeginMode3D(game_camera)
 		for &game, i in g_games {
 			if i == currently_selected {
 				rot_speed: f32 = is_game_launched ? 900 : 30
@@ -348,6 +377,7 @@ main :: proc() {
 			if is_viewing_game_details {
 				draw_complete_details(curr_game)
 			} else {
+				draw_nav_buttons()
 				draw_basic_details(curr_game)
 			}
 		}

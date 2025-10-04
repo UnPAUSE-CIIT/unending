@@ -9,17 +9,29 @@ draw_button :: proc {
 	draw_image_button,
 }
 
-draw_image_button :: proc(image: rl.Texture2D, bounds: rl.Rectangle, on_click: proc()) {
+draw_image_button :: proc(
+	image: rl.Texture2D,
+	bounds: rl.Rectangle,
+	on_click: proc(),
+	alpha: V2i = {50, 255}, // alpha.x = normal, .y = hovered
+) {
 	mouse_pos := rl.GetMousePosition()
 	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
 
-	a: u8 = is_hovered ? 255 : 50
-	base_col := rl.Color{1, 1, 1, a}
+	a := is_hovered ? alpha.y : alpha.x
+	base_col := rl.Color{255, 255, 255, u8(a)}
 
 	src := rl.Rectangle{0, 0, f32(image.width), f32(image.height)}
 	rl.DrawTexturePro(image, src, bounds, V2f(0), 0, base_col)
+
+	if is_hovered && rl.IsMouseButtonPressed(.LEFT) {
+		if on_click != nil {
+			on_click()
+		}
+	}
 }
 
+// maybe find some way to abstract common button props (is_hovered, on_click, etc)
 draw_text_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
 	mouse_pos := rl.GetMousePosition()
 	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
