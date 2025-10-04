@@ -12,7 +12,7 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.0.0"
+TITLE :: "UnENDING v1.0.1"
 V2f :: [2]f32
 V3f :: [3]f32
 
@@ -41,15 +41,8 @@ is_viewing_game_details := false
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
 
-title_font: rl.Font
-body_font: rl.Font
-body_font_italic: rl.Font
-keys_font: rl.Font
-
-itch_tex: rl.Texture2D
-
 load_all_games :: proc() {
-	dir_handle, dir_err := os.open("build/games")
+	dir_handle, dir_err := os.open("games")
 	if dir_err != nil {
 		log.error("dir err", dir_err)
 		return
@@ -81,7 +74,7 @@ load_all_games :: proc() {
 		game_info.fullpath = strings.clone(entry.fullpath)
 
 		// load model
-		game_info.model = rl.LoadModel("build/assets/box_art_base.glb")
+		game_info.model = rl.LoadModel("assets/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 
@@ -124,17 +117,17 @@ draw_basic_details :: proc(game: Game) {
 	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
 	center := (rl.GetScreenWidth() / 2)
-	line_width := rl.MeasureTextEx(title_font, name, 48, 2)
+	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
 	y := la.floor(f32(rl.GetScreenHeight()) * .78)
-	rl.DrawTextEx(title_font, name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
+	rl.DrawTextEx(fonts["title"], name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
 
 	y += 50
-	line_width = rl.MeasureTextEx(body_font, devs, 24, 1)
-	rl.DrawTextEx(body_font, devs, {f32(center) - line_width.x / 2, y}, 24, 1, rl.WHITE)
+	line_width = rl.MeasureTextEx(fonts["body"], devs, 24, 1)
+	rl.DrawTextEx(fonts["body"], devs, {f32(center) - line_width.x / 2, y}, 24, 1, rl.WHITE)
 
 	y += 32
-	line_width = rl.MeasureTextEx(body_font_italic, tags, 18, 1)
-	rl.DrawTextEx(body_font_italic, tags, {f32(center) - line_width.x / 2, y}, 18, 1, rl.WHITE)
+	line_width = rl.MeasureTextEx(fonts["body_italic"], tags, 18, 1)
+	rl.DrawTextEx(fonts["body_italic"], tags, {f32(center) - line_width.x / 2, y}, 18, 1, rl.WHITE)
 }
 
 Detail_Tab :: enum {
@@ -172,35 +165,45 @@ draw_complete_details :: proc(game: Game) {
 
 	// header
 	itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
-	rl.DrawTexturePro(itch_tex, rl.Rectangle{0, 0, 740, 228}, itch_rec, {0, 0}, 0, rl.WHITE)
+	rl.DrawTexturePro(
+		textures["itch"],
+		rl.Rectangle{0, 0, 740, 228},
+		itch_rec,
+		{0, 0},
+		0,
+		rl.WHITE,
+	)
 
 	name := to_cstr(game.name)
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
 
-	rl.DrawTextEx(title_font, name, {x, y}, 52, 2, rl.WHITE)
+	rl.DrawTextEx(fonts["title"], name, {x, y}, 52, 2, rl.WHITE)
 	y += 52 + 18
 
-	rl.DrawTextEx(body_font_italic, devs, {x, y}, 18, 1, rl.WHITE)
+	rl.DrawTextEx(fonts["body_italic"], devs, {x, y}, 18, 1, rl.WHITE)
 	y += 48
 
 	if current_tab == .General {
 		desc := to_cstr(game.description)
 		tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
-		last_y := draw_wrapped_text(body_font, game.description, {x, y}, 24, 1, 900, rl.WHITE)
+		last_y := draw_wrapped_text(fonts["body"], game.description, {x, y}, 24, 1, 900, rl.WHITE)
 		y = last_y + 24
 
-		rl.DrawTextEx(body_font_italic, to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
+		rl.DrawTextEx(fonts["body_italic"], to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
 		y += 24 + 6
 	} else {
-		rl.DrawTextEx(body_font_italic, "Members", {x, y}, 32, 1, rl.WHITE)
+		rl.DrawTextEx(fonts["body_italic"], "Members", {x, y}, 32, 1, rl.WHITE)
 		y += 32 + 18
 		members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
-		rl.DrawTextEx(body_font, members, {x, y}, 24, 1, rl.WHITE)
+		rl.DrawTextEx(fonts["body"], members, {x, y}, 24, 1, rl.WHITE)
 	}
 }
 
 main :: proc() {
+	// mac doesnt use app dir as working directory
+	rl.ChangeDirectory(rl.GetApplicationDirectory())
+
 	logger := log.create_console_logger()
 	context.logger = logger
 
@@ -213,28 +216,15 @@ main :: proc() {
 	setup_game_runner()
 
 	// :font loading
-
-	// codepoints (symbols and stuff)
-	runes := utf8.string_to_runes(
-		" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~—–",
-	)
-
-	title_font = rl.LoadFontEx("build/assets/title.ttf", 64, raw_data(runes), i32(len(runes)))
-	rl.SetTextureFilter(title_font.texture, .TRILINEAR)
-	body_font = rl.LoadFontEx("build/assets/body.ttf", 48, raw_data(runes), i32(len(runes)))
-	rl.SetTextureFilter(body_font.texture, .TRILINEAR)
-	body_font_italic = rl.LoadFontEx(
-		"build/assets/body_italic.ttf",
-		48,
-		raw_data(runes),
-		i32(len(runes)),
-	)
-	rl.SetTextureFilter(body_font_italic.texture, .TRILINEAR)
-
+	load_font("title")
+	load_font("body", font_size = 48)
+	load_font("body_italic", font_size = 48)
 	rl.SetTextLineSpacing(16)
 
-	bg_tex := rl.LoadTexture("build/assets/bg.png")
-	itch_tex = rl.LoadTexture("build/assets/itch.png")
+	load_texture("bg")
+	load_texture("itch")
+	load_texture("left_chev")
+	load_texture("right_chev")
 	load_all_games()
 
 	camera := rl.Camera3D {
@@ -298,13 +288,13 @@ main :: proc() {
 
 		// @TODO replace bg with screenshot
 		rl.DrawTextureRec(
-			bg_tex,
+			textures["bg"],
 			rl.Rectangle{0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())},
 			V2f(0.0),
 			rl.WHITE,
 		)
 
-		rl.DrawTextEx(title_font, TITLE, {10, 10}, 24, 2, {255, 255, 255, 50})
+		rl.DrawTextEx(fonts["title"], TITLE, {10, 10}, 24, 2, {255, 255, 255, 50})
 
 		// :bottom bar
 		bar_height := i32(72)
@@ -320,7 +310,7 @@ main :: proc() {
 		}
 
 		rl.DrawTextEx(
-			title_font,
+			fonts["title"],
 			bottom_bar_text,
 			{bar_pos.x + 10, bar_pos.y + 16},
 			32,
@@ -370,15 +360,9 @@ main :: proc() {
 		rl.UnloadModel(game.model)
 		rl.UnloadTexture(game.texture)
 	}
-	rl.UnloadTexture(bg_tex)
-	rl.UnloadTexture(itch_tex)
-	rl.UnloadFont(title_font)
-	rl.UnloadFont(body_font)
-	rl.UnloadFont(body_font_italic)
-	rl.UnloadFont(keys_font)
-	destroy_game_runner()
 
-	rl.CloseWindow()
+	free_resources()
+	destroy_game_runner()
 
 	free_all(context.temp_allocator)
 }

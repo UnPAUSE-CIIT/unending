@@ -20,7 +20,7 @@ setup_game_runner :: proc() {
 }
 
 @(private = "file")
-_start_game_close_wait :: proc(p: os2.Process, close_chan: chan.Chan(bool, .Send)) {
+_create_game_waiter_thread :: proc(p: os2.Process, close_chan: chan.Chan(bool, .Send)) {
 	fmt.println("waiting for game to close")
 	state, err := os2.process_wait(p)
 	assert(err == nil)
@@ -35,6 +35,7 @@ wait_for_game_close :: proc() {
 	if ok {
 		fmt.println("[game runner] requested game close:", game_closed_value)
 		is_game_launched = !game_closed_value
+		chan.close(game_wait_channel)
 	}
 }
 
@@ -58,7 +59,7 @@ run_game_threaded :: proc(game: Game) {
 	game_wait_thread = thread.create_and_start_with_poly_data2(
 		process_handle,
 		chan.as_send(game_wait_channel),
-		_start_game_close_wait,
+		_create_game_waiter_thread,
 	)
 }
 

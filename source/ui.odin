@@ -4,7 +4,23 @@ import "core:fmt"
 import "core:strings"
 import rl "vendor:raylib"
 
-draw_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
+draw_button :: proc {
+	draw_text_button,
+	draw_image_button,
+}
+
+draw_image_button :: proc(image: rl.Texture2D, bounds: rl.Rectangle, on_click: proc()) {
+	mouse_pos := rl.GetMousePosition()
+	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
+
+	a: u8 = is_hovered ? 255 : 50
+	base_col := rl.Color{1, 1, 1, a}
+
+	src := rl.Rectangle{0, 0, f32(image.width), f32(image.height)}
+	rl.DrawTexturePro(image, src, bounds, V2f(0), 0, base_col)
+}
+
+draw_text_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
 	mouse_pos := rl.GetMousePosition()
 	is_hovered := rl.CheckCollisionPointRec(mouse_pos, bounds)
 
@@ -14,9 +30,9 @@ draw_button :: proc(text: cstring, bounds: rl.Rectangle, on_click: proc()) {
 	}
 
 	rl.DrawRectangleRounded(bounds, 0.3, 5, base_col)
-	line_width := rl.MeasureTextEx(body_font, text, 24, 2)
+	line_width := rl.MeasureTextEx(fonts["body"], text, 24, 2)
 	rl.DrawTextEx(
-		body_font,
+		fonts["body"],
 		text,
 		{bounds.x + bounds.width / 2 - line_width.x / 2, bounds.y + 12},
 		24,
