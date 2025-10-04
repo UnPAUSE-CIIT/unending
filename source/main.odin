@@ -244,6 +244,9 @@ main :: proc() {
 
 	rl.SetExitKey(.F10)
 
+	rl.InitAudioDevice()
+	load_sound("sfx_launch")
+
 	setup_game_runner()
 
 	// :font loading
@@ -299,6 +302,8 @@ main :: proc() {
 				} else {
 					run_game_threaded(g_games[currently_selected])
 					is_viewing_game_details = false
+
+					rl.PlaySound(sounds["sfx_launch"])
 				}
 				move_camera_to_curr()
 			}
@@ -393,6 +398,8 @@ main :: proc() {
 
 	free_resources()
 	destroy_game_runner()
+
+	rl.CloseAudioDevice()
 
 	free_all(context.temp_allocator)
 }
