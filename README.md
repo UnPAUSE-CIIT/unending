@@ -34,6 +34,10 @@ just fork the repo and create a pull request for your changes!
 
 # logs
 
+### oct 4 log
+v1.1.0! added left and right arrows, as requested by another exec lol
+this update is more developer-focused, since the main update is the addition of a resource manager. it's very barebones and super simple, but i'm including it to teach newer developers in the org who are interested in low-level development some practices on how to manage stuff liek that :D
+
 ### oct 3 log
 finished v1.0.0, skipped a bunch of numbers but this is fr the working version.
 it only works on linux cuz im using `umu-run` to launch the games, cuz im using linux btw (also cuz we r gona use the steam deck to run the launcher during org weave)
