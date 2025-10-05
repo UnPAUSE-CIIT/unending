@@ -15,10 +15,6 @@ is_game_launched: bool
 game_wait_thread: ^thread.Thread
 game_wait_channel: chan.Chan(bool)
 
-setup_game_runner :: proc() {
-	game_wait_channel, _ = chan.create_unbuffered(chan.Chan(bool), context.allocator)
-}
-
 @(private = "file")
 _create_game_waiter_thread :: proc(p: os2.Process, close_chan: chan.Chan(bool, .Send)) {
 	fmt.println("waiting for game to close")
@@ -54,7 +50,8 @@ run_game_threaded :: proc(game: Game) {
 	)
 	assert(err == nil, fmt.tprint("error running game:", err))
 	is_game_launched = true
-
+        
+	game_wait_channel, _ = chan.create_unbuffered(chan.Chan(bool), context.allocator)
 	// start wait thread
 	game_wait_thread = thread.create_and_start_with_poly_data2(
 		process_handle,

@@ -101,6 +101,10 @@ load_all_games :: proc() {
 }
 
 move_dir :: proc(dir: int) {
+    if is_game_launched {
+        return
+    }
+    
 	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
 	move_camera_to_curr()
 }
@@ -246,8 +250,6 @@ main :: proc() {
 
 	rl.InitAudioDevice()
 	load_sound("sfx_launch")
-
-	setup_game_runner()
 
 	// :font loading
 	load_font("title")
