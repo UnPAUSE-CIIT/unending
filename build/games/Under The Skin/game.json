@@ -1,0 +1,23 @@
+{
+	"name": "Under the Skin",
+	"description": "Under the Skin is a top-down stealth game. You start as a young virus that has made contact with its first unsuspecting victim. As a virus, you must traverse through the insides of the human body, infecting different vital organs and destroying its functionality. Evade different immune cells that will try to find, catch, and eliminate you to protect the human body. As you go deeper inside the human body, the virus will mutate, unlocking different skills that will help you through your journey.\n\nEvade the immune cells, Evolve the virus, and Eradicate the human body.",
+	"genres": [
+		"Rage",
+		"(NOT RELAXING)",
+		"Stealth"
+	],
+	"developers": [
+		"@&eee Studio (Attendees Studio)"
+	],
+	"members": [
+		"Jed Angelo Magallon",
+		"Rafael Edward Deligero",
+		"George Immanuel Halabi",
+		"Nicaia Enna Divina"
+	],
+	"supported_controls": [
+		"kbm"
+	],
+	"download_link": "https://casmonavid.itch.io/under-the-skin",
+	"game_file": "UnderTheSkin.exe"
+}
