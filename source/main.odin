@@ -384,7 +384,9 @@ main :: proc() {
 			if is_viewing_game_details {
 				draw_complete_details(curr_game)
 			} else {
-				draw_nav_buttons()
+                if !is_game_launched {
+                    draw_nav_buttons()
+                }
 				draw_basic_details(curr_game)
 			}
 		}
