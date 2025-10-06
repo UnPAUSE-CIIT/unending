@@ -3,7 +3,8 @@
 	"description": "you have to leave. you're not supposed to be here.",
 	"genres": [
 		"Horror",
-		"Point-and-click"
+		"Puzzle",
+		"1-bit"
 	],
 	"developers": [
 		"zsfer"
@@ -12,7 +13,7 @@
 		"Seifer Albacete"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard/Mouse"
 	],
 	"download_link": "https://zsfer.itch.io/mother",
 	"game_file": "game/MOTHER.exe"
