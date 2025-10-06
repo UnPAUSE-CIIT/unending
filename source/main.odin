@@ -35,6 +35,8 @@ Game :: struct {
 	hidden:             bool,
 }
 
+
+active_gamepad: i32 = 0
 g_games := make([dynamic]Game)
 currently_selected: int = 0
 is_viewing_game_details := false
@@ -73,7 +75,7 @@ load_all_games :: proc() {
 			continue
 		}
 
-		game_info.fullpath = strings.clone(entry.fullpath)
+            game_info.fullpath = strings.clone(entry.fullpath)
 
 		// load model
 		game_info.model = rl.LoadModel("assets/box_art_base.glb")
@@ -126,7 +128,7 @@ draw_basic_details :: proc(game: Game) {
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
 	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
-	center := (rl.GetScreenWidth() / 2)
+        center := (rl.GetScreenWidth() / 2)
 	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
 	y := la.floor(f32(rl.GetScreenHeight()) * .78)
 	rl.DrawTextEx(fonts["title"], name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
@@ -246,6 +248,15 @@ main :: proc() {
 	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), TITLE)
 	defer rl.CloseWindow()
 
+    // force check which gamepad works
+    for i in 0..<10 {
+        if rl.IsGamepadAvailable(i32(i)) {
+            active_gamepad = i32(i)
+            log.info("found gamepad:", active_gamepad)
+            break
+        }
+    }
+
 	rl.SetExitKey(.F10)
 
 	rl.InitAudioDevice()
@@ -282,7 +293,7 @@ main :: proc() {
 				game_camera.position = la.lerp(
 					game_camera.position,
 					camera_target_position,
-					20 * rl.GetFrameTime(),
+					19 * rl.GetFrameTime(),
 				)
 				game_camera.target = game_camera.position + V3f{0, 0, -1}
 			} else {
@@ -292,13 +303,13 @@ main :: proc() {
 
 		// :Update
 		if !is_game_launched {
-			if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) {
+			if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) || rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
 				move_dir(-1)
 			}
-			if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) {
+			if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) || rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
 				move_dir(1)
 			}
-			if rl.IsKeyPressed(.ENTER) {
+			if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN){
 				if !is_viewing_game_details {
 					is_viewing_game_details = true
 				} else {
@@ -310,7 +321,7 @@ main :: proc() {
 				move_camera_to_curr()
 			}
 
-			if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) {
+			if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) || rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) {
 				is_viewing_game_details = false
 				move_camera_to_curr()
 			}
