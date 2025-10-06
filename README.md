@@ -34,6 +34,15 @@ just fork the repo and create a pull request for your changes!
 
 # logs
 
+### oct 6 log
+
+ORG WEAVE!
+
+TODO
+- afk scrolling
+- menu music
+- click on the box to open
+
 ### oct 4 log
 v1.1.0! added left and right arrows, as requested by another exec lol
 this update is more developer-focused, since the main update is the addition of a resource manager. it's very barebones and super simple, but i'm including it to teach newer developers in the org who are interested in low-level development some practices on how to manage stuff liek that :D

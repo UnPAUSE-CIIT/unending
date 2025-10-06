@@ -16,7 +16,6 @@
 	],
 	"supported_controls": [
 		"kbm",
-		"controller"
 	],
 	"download_link": "https://hehnice.itch.io/fright-night",
 	"game_file": "game/FrightNight.exe"
