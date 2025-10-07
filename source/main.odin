@@ -126,7 +126,7 @@ move_camera_to_curr :: proc() {
 draw_basic_details :: proc(game: Game) {
 	name := to_cstr(game.name)
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-	tags := fmt.ctprintf("{}\n{}", strings.join(game.genres, ", ", context.temp_allocator), strings.join(game.supported_controls, ", ", context.temp_allocator))
+	tags := fmt.ctprintf("{}\t-\t{}", strings.join(game.genres, ", ", context.temp_allocator), strings.join(game.supported_controls, ", ", context.temp_allocator))
 
     center := (rl.GetScreenWidth() / 2)
 	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
