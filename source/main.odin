@@ -423,7 +423,7 @@ main :: proc() {
 
 		// @TODO use sprites for this, use a spritesheet or use a font?
 		bottom_bar_text: cstring =
-			!is_viewing_game_details ? "A/D - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
+			!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
 
 		if is_game_launched {
 			bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
