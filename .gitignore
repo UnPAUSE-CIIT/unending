@@ -1,2 +1,4 @@
 build/unending
 build/games/**/game
+
+/venv.*
