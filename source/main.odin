@@ -13,7 +13,7 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.3.1"
+TITLE :: "UnENDING v1.3.2"
 V2f :: [2]f32
 V3f :: [3]f32
 V2i :: [2]i32
