@@ -34,17 +34,20 @@ Game :: struct {
 	texture:            rl.Texture2D,
 	rotation:           f32,
 	hidden:             bool,
+	qr_img:             rl.Texture2D,
+	bbox:               rl.BoundingBox,
 }
 
 Launch_Flags :: struct {
 	fullscreen: bool,
 }
 
-
+// @TODO, use screen/panel contexts/flags instead of these bools
 active_gamepad: i32 = 0
 g_games := make([dynamic]Game)
 currently_selected: int = 0
 is_viewing_game_details := false
+is_showing_qr := false
 
 game_camera: rl.Camera3D
 camera_target_position := V3f{0.0, 0.0, -1.0}
@@ -87,6 +90,8 @@ load_all_games :: proc() {
 		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 
+		game_info.qr_img = rl.LoadTexture(to_cstr("%s/qr.png", entry.fullpath))
+		game_info.bbox = rl.GetMeshBoundingBox(game_info.model.meshes[0])
 		append(&g_games, game_info)
 	}
 
@@ -186,13 +191,13 @@ draw_complete_details :: proc(game: Game) {
 
 	// header
 	itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
-	rl.DrawTexturePro(
-		textures["itch"],
-		rl.Rectangle{0, 0, 740, 228},
-		itch_rec,
-		{0, 0},
-		0,
-		rl.WHITE,
+	draw_image_button(
+		image = textures["itch"],
+		alpha = {200, 255},
+		bounds = itch_rec,
+		on_click = proc() {
+			is_showing_qr = true
+		},
 	)
 
 	name := to_cstr(game.name)
@@ -257,12 +262,15 @@ main :: proc() {
 	context.logger = logger
 
 	rl_flags: rl.ConfigFlags = {.MSAA_4X_HINT, .VSYNC_HINT}
+	w, h: i32 = 1600, 900
 	if launch_flags.fullscreen {
 		rl_flags += {.FULLSCREEN_MODE}
+		w = rl.GetMonitorWidth(0)
+		h = rl.GetMonitorHeight(0)
 	}
-	rl.SetConfigFlags(rl_flags)
 
-	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), TITLE)
+	rl.SetConfigFlags(rl_flags)
+	rl.InitWindow(w, h, TITLE)
 	defer rl.CloseWindow()
 
 	// force check which gamepad works
@@ -320,37 +328,56 @@ main :: proc() {
 
 		// :Update
 		if !is_game_launched {
-			if rl.IsKeyPressed(.A) ||
-			   rl.IsKeyPressed(.LEFT) ||
-			   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
-				move_dir(-1)
-			}
-			if rl.IsKeyPressed(.D) ||
-			   rl.IsKeyPressed(.RIGHT) ||
-			   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
-				move_dir(1)
-			}
-			if rl.IsKeyPressed(.ENTER) ||
-			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN) {
-				if !is_viewing_game_details {
-					is_viewing_game_details = true
-				} else {
-					run_game_threaded(g_games[currently_selected])
-					is_viewing_game_details = false
-
-					rl.PlaySound(sounds["sfx_launch"])
+			if !is_showing_qr {
+				if rl.IsKeyPressed(.A) ||
+				   rl.IsKeyPressed(.LEFT) ||
+				   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
+					move_dir(-1)
 				}
-				move_camera_to_curr()
+				if rl.IsKeyPressed(.D) ||
+				   rl.IsKeyPressed(.RIGHT) ||
+				   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
+					move_dir(1)
+				}
+				if rl.IsKeyPressed(.ENTER) ||
+				   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN) {
+					if !is_viewing_game_details {
+						is_viewing_game_details = true
+					} else {
+						run_game_threaded(g_games[currently_selected])
+						is_viewing_game_details = false
+
+						rl.PlaySound(sounds["sfx_launch"])
+					}
+					move_camera_to_curr()
+				}
 			}
 
 			if rl.IsKeyPressed(.ESCAPE) ||
 			   rl.IsKeyPressed(.BACKSPACE) ||
 			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) {
-				is_viewing_game_details = false
+				if is_viewing_game_details {
+					is_viewing_game_details = false
+				}
+				if is_showing_qr {
+					is_showing_qr = false
+				}
 				move_camera_to_curr()
 			}
 		} else {
 			wait_for_game_close()
+		}
+
+		ray := rl.GetScreenToWorldRay(rl.GetMousePosition(), game_camera)
+
+		// @TODO optimize this? this loops through ALL of the box arts
+		// an optimization would be checking 3 models at a time (before, current, and next)
+		for g, i in g_games {
+			hit := rl.GetRayCollisionBox(ray, g.bbox)
+			if rl.IsMouseButtonPressed(.LEFT) && hit.hit {
+				currently_selected = i
+				move_camera_to_curr()
+			}
 		}
 
 		// :Draw
@@ -423,6 +450,37 @@ main :: proc() {
 					draw_nav_buttons()
 				}
 				draw_basic_details(curr_game)
+			}
+		}
+
+		if is_showing_qr {
+			qr_box: f32 = 370 / 3
+			qr_bounds := rl.Rectangle {
+				f32(rl.GetScreenWidth() / 2) - qr_box,
+				f32(rl.GetScreenHeight() / 2) - qr_box,
+				qr_box * 3,
+				qr_box * 3,
+			}
+
+			// dim bg
+			rl.DrawRectangle(
+				0,
+				0,
+				rl.GetScreenWidth(),
+				rl.GetScreenHeight(),
+				rl.Color{0, 0, 0, 200},
+			)
+			rl.DrawTexturePro(
+				g_games[currently_selected].qr_img,
+				{0, 0, 370, 370},
+				qr_bounds,
+				{},
+				0,
+				rl.WHITE,
+			)
+
+			if rl.IsMouseButtonPressed(.LEFT) {
+				is_showing_qr = false
 			}
 		}
 
