@@ -55,7 +55,7 @@ do_camera_move := false
 
 idle_timer: f32 = 0
 last_demo_shift_trigger: i32 = -1
-AFK_DEMO_THRESHOLD :: f32(60.0) // 60 seconds
+AFK_DEMO_THRESHOLD :: f32(30.0)
 DEMO_SHIFT_DURATION :: 5
 
 load_all_games :: proc() {
