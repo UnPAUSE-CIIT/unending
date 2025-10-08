@@ -453,13 +453,14 @@ main :: proc() {
 			}
 		}
 
+		// :draw qr
 		if is_showing_qr {
-			qr_box: f32 = 370 / 3
+			qr_box: f32 = 370
 			qr_bounds := rl.Rectangle {
-				f32(rl.GetScreenWidth() / 2) - qr_box,
-				f32(rl.GetScreenHeight() / 2) - qr_box,
-				qr_box * 3,
-				qr_box * 3,
+				f32(rl.GetScreenWidth() / 2) - qr_box / 2,
+				f32(rl.GetScreenHeight() / 2) - qr_box / 2,
+				qr_box,
+				qr_box,
 			}
 
 			// dim bg
@@ -479,7 +480,21 @@ main :: proc() {
 				rl.WHITE,
 			)
 
-			if rl.IsMouseButtonPressed(.LEFT) {
+			dl_link := to_cstr(g_games[currently_selected].download_link)
+			rl.DrawTextEx(
+				fonts["body"],
+				dl_link,
+				{
+					f32(rl.GetScreenWidth() / 2) -
+					rl.MeasureTextEx(fonts["body"], dl_link, 32, 1).x / 2,
+					f32(40),
+				},
+				32,
+				1,
+				rl.WHITE,
+			)
+
+			if rl.IsMouseButtonPressed(.RIGHT) {
 				is_showing_qr = false
 			}
 		}
