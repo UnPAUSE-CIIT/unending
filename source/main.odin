@@ -398,6 +398,10 @@ main :: proc() {
 			}
 		}
 
+		if is_showing_qr && rl.IsMouseButtonPressed(.LEFT) {
+			is_showing_qr = false
+		}
+
 		// :Draw
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.DARKBLUE)
@@ -511,10 +515,6 @@ main :: proc() {
 				1,
 				rl.WHITE,
 			)
-
-			if rl.IsMouseButtonPressed(.RIGHT) {
-				is_showing_qr = false
-			}
 		}
 
 		rl.EndDrawing()

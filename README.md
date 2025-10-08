@@ -34,6 +34,14 @@ just fork the repo and create a pull request for your changes!
 
 # logs
 
+### oct 8 log
+
+ORG WEAVE D3!
+
+ideas for "collections":
+
+- steam mods/subscription based
+
 ### oct 6 log
 
 ORG WEAVE!
