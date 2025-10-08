@@ -13,7 +13,7 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.1.0"
+TITLE :: "UnENDING v1.3.1"
 V2f :: [2]f32
 V3f :: [3]f32
 V2i :: [2]i32
@@ -52,6 +52,11 @@ is_showing_qr := false
 game_camera: rl.Camera3D
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
+
+idle_timer: f32 = 0
+last_demo_shift_trigger: i32 = -1
+AFK_DEMO_THRESHOLD :: f32(60.0) // 60 seconds
+DEMO_SHIFT_DURATION :: 5
 
 load_all_games :: proc() {
 	dir_handle, dir_err := os.open("games")
@@ -112,15 +117,15 @@ load_all_games :: proc() {
 	}
 }
 
-move_dir :: proc(dir: int) {
+move_dir :: proc(dir: int, reset_timer: bool = true) {
 	if is_game_launched {
 		return
 	}
 
 	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
-	move_camera_to_curr()
+	move_camera_to_curr(reset_timer = reset_timer)
 }
-move_camera_to_curr :: proc() {
+move_camera_to_curr :: proc(reset_timer: bool = true) {
 	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
 
 	if is_viewing_game_details {
@@ -131,6 +136,8 @@ move_camera_to_curr :: proc() {
 	camera_target_position = V3f{trg_pos.x, trg_pos.y, 5}
 	do_camera_move = true
 	current_tab = .General
+
+	if reset_timer do idle_timer = 0
 }
 
 draw_basic_details :: proc(game: Game) {
@@ -377,6 +384,17 @@ main :: proc() {
 			if rl.IsMouseButtonPressed(.LEFT) && hit.hit {
 				currently_selected = i
 				move_camera_to_curr()
+			}
+		}
+
+		idle_timer += rl.GetFrameTime()
+
+		// :DEMO MODE
+		if idle_timer > AFK_DEMO_THRESHOLD {
+			if i32(idle_timer) % DEMO_SHIFT_DURATION == 0 &&
+			   i32(idle_timer) != last_demo_shift_trigger {
+				move_dir(1, false)
+				last_demo_shift_trigger = i32(idle_timer)
 			}
 		}
 
