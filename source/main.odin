@@ -1,5 +1,6 @@
 package main
 import "core:encoding/json"
+import "core:flags"
 import "core:fmt"
 import "core:log"
 import la "core:math/linalg"
@@ -33,6 +34,10 @@ Game :: struct {
 	texture:            rl.Texture2D,
 	rotation:           f32,
 	hidden:             bool,
+}
+
+Launch_Flags :: struct {
+	fullscreen: bool,
 }
 
 
@@ -75,7 +80,7 @@ load_all_games :: proc() {
 			continue
 		}
 
-            game_info.fullpath = strings.clone(entry.fullpath)
+		game_info.fullpath = strings.clone(entry.fullpath)
 
 		// load model
 		game_info.model = rl.LoadModel("assets/box_art_base.glb")
@@ -103,10 +108,10 @@ load_all_games :: proc() {
 }
 
 move_dir :: proc(dir: int) {
-    if is_game_launched {
-        return
-    }
-    
+	if is_game_launched {
+		return
+	}
+
 	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
 	move_camera_to_curr()
 }
@@ -126,9 +131,13 @@ move_camera_to_curr :: proc() {
 draw_basic_details :: proc(game: Game) {
 	name := to_cstr(game.name)
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-	tags := fmt.ctprintf("{}\t-\t{}", strings.join(game.genres, ", ", context.temp_allocator), strings.join(game.supported_controls, ", ", context.temp_allocator))
+	tags := fmt.ctprintf(
+		"{}\t-\t{}",
+		strings.join(game.genres, ", ", context.temp_allocator),
+		strings.join(game.supported_controls, ", ", context.temp_allocator),
+	)
 
-    center := (rl.GetScreenWidth() / 2)
+	center := (rl.GetScreenWidth() / 2)
 	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
 	y := la.floor(f32(rl.GetScreenHeight()) * .78)
 	rl.DrawTextEx(fonts["title"], name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
@@ -238,24 +247,32 @@ draw_nav_buttons :: proc() {
 }
 
 main :: proc() {
+	launch_flags: Launch_Flags
+	flags.parse(&launch_flags, os.args[1:], .Unix)
+
 	// mac doesnt use app dir as working directory
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
 
 	logger := log.create_console_logger()
 	context.logger = logger
 
-	rl.SetConfigFlags({.MSAA_4X_HINT, .FULLSCREEN_MODE, .VSYNC_HINT})
+	rl_flags: rl.ConfigFlags = {.MSAA_4X_HINT, .VSYNC_HINT}
+	if launch_flags.fullscreen {
+		rl_flags += {.FULLSCREEN_MODE}
+	}
+	rl.SetConfigFlags(rl_flags)
+
 	rl.InitWindow(rl.GetMonitorWidth(0), rl.GetMonitorHeight(0), TITLE)
 	defer rl.CloseWindow()
 
-    // force check which gamepad works
-    for i in 0..<10 {
-        if rl.IsGamepadAvailable(i32(i)) {
-            active_gamepad = i32(i)
-            log.info("found gamepad:", active_gamepad)
-            break
-        }
-    }
+	// force check which gamepad works
+	for i in 0 ..< 10 {
+		if rl.IsGamepadAvailable(i32(i)) {
+			active_gamepad = i32(i)
+			log.info("found gamepad:", active_gamepad)
+			break
+		}
+	}
 
 	rl.SetExitKey(.F10)
 
@@ -303,13 +320,18 @@ main :: proc() {
 
 		// :Update
 		if !is_game_launched {
-			if rl.IsKeyPressed(.A) || rl.IsKeyPressed(.LEFT) || rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
+			if rl.IsKeyPressed(.A) ||
+			   rl.IsKeyPressed(.LEFT) ||
+			   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
 				move_dir(-1)
 			}
-			if rl.IsKeyPressed(.D) || rl.IsKeyPressed(.RIGHT) || rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
+			if rl.IsKeyPressed(.D) ||
+			   rl.IsKeyPressed(.RIGHT) ||
+			   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
 				move_dir(1)
 			}
-			if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN){
+			if rl.IsKeyPressed(.ENTER) ||
+			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN) {
 				if !is_viewing_game_details {
 					is_viewing_game_details = true
 				} else {
@@ -321,7 +343,9 @@ main :: proc() {
 				move_camera_to_curr()
 			}
 
-			if rl.IsKeyPressed(.ESCAPE) || rl.IsKeyPressed(.BACKSPACE) || rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) {
+			if rl.IsKeyPressed(.ESCAPE) ||
+			   rl.IsKeyPressed(.BACKSPACE) ||
+			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) {
 				is_viewing_game_details = false
 				move_camera_to_curr()
 			}
@@ -395,9 +419,9 @@ main :: proc() {
 			if is_viewing_game_details {
 				draw_complete_details(curr_game)
 			} else {
-                if !is_game_launched {
-                    draw_nav_buttons()
-                }
+				if !is_game_launched {
+					draw_nav_buttons()
+				}
 				draw_basic_details(curr_game)
 			}
 		}
