@@ -35,7 +35,8 @@ Game :: struct {
 	rotation:           f32,
 	hidden:             bool,
 	qr_img:             rl.Texture2D,
-	bbox:               rl.BoundingBox,
+	aabb:               rl.BoundingBox,
+	tr_aabb:            rl.BoundingBox,
 }
 
 Launch_Flags :: struct {
@@ -57,6 +58,7 @@ idle_timer: f32 = 0
 last_demo_shift_trigger: i32 = -1
 AFK_DEMO_THRESHOLD :: f32(30.0)
 DEMO_SHIFT_DURATION :: 5
+is_demo_mode := false
 
 load_all_games :: proc() {
 	dir_handle, dir_err := os.open("games")
@@ -96,7 +98,7 @@ load_all_games :: proc() {
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 
 		game_info.qr_img = rl.LoadTexture(to_cstr("%s/qr.png", entry.fullpath))
-		game_info.bbox = rl.GetMeshBoundingBox(game_info.model.meshes[0])
+		game_info.aabb = rl.GetMeshBoundingBox(game_info.model.meshes[0])
 		append(&g_games, game_info)
 	}
 
@@ -122,9 +124,10 @@ move_dir :: proc(dir: int, reset_timer: bool = true) {
 		return
 	}
 
-	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
+            currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
 	move_camera_to_curr(reset_timer = reset_timer)
 }
+// `on_move_complete` is so bad please i need to rewrite this this is so bad
 move_camera_to_curr :: proc(reset_timer: bool = true) {
 	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
 
@@ -138,6 +141,7 @@ move_camera_to_curr :: proc(reset_timer: bool = true) {
 	current_tab = .General
 
 	if reset_timer do idle_timer = 0
+    is_demo_mode = false
 }
 
 draw_basic_details :: proc(game: Game) {
@@ -362,7 +366,7 @@ main :: proc() {
 
 			if rl.IsKeyPressed(.ESCAPE) ||
 			   rl.IsKeyPressed(.BACKSPACE) ||
-			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) {
+			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) || rl.IsMouseButtonPressed(.RIGHT) {
 				if is_viewing_game_details {
 					is_viewing_game_details = false
 				}
@@ -380,10 +384,14 @@ main :: proc() {
 		// @TODO optimize this? this loops through ALL of the box arts
 		// an optimization would be checking 3 models at a time (before, current, and next)
 		for g, i in g_games {
-			hit := rl.GetRayCollisionBox(ray, g.bbox)
+			hit := rl.GetRayCollisionBox(ray, g.tr_aabb)
 			if rl.IsMouseButtonPressed(.LEFT) && hit.hit {
+                if !do_camera_move && currently_selected == i {
+                    is_viewing_game_details = true
+                }
 				currently_selected = i
-				move_camera_to_curr()
+                move_camera_to_curr()
+                break
 			}
 		}
 
@@ -394,6 +402,7 @@ main :: proc() {
 			if i32(idle_timer) % DEMO_SHIFT_DURATION == 0 &&
 			   i32(idle_timer) != last_demo_shift_trigger {
 				move_dir(1, false)
+                is_demo_mode = true
 				last_demo_shift_trigger = i32(idle_timer)
 			}
 		}
@@ -425,6 +434,10 @@ main :: proc() {
 		bottom_bar_text: cstring =
 			!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
 
+        if is_demo_mode {
+            bottom_bar_text = "DEMO MODE! Press A,D or <-, -> to select a game"
+        }
+
 		if is_game_launched {
 			bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
 		}
@@ -450,16 +463,23 @@ main :: proc() {
 			if (is_viewing_game_details || is_game_launched) && i != currently_selected {
 				continue
 			}
+            
+            pos := V3f{f32(i) * BOX_OFFSETS, 0.2, 0}
 
 			// @TODO use lit shader with basic directional light?
 			rl.DrawModelEx(
 				game.model,
-				V3f{f32(i) * BOX_OFFSETS, 0.2, 0},
+                pos,
 				V3f{0, 1, 0},
 				game.rotation,
 				V3f(1.0),
 				rl.WHITE,
 			)
+
+            game.tr_aabb = rl.BoundingBox{
+                min = rl.Vector3Transform(game.aabb.min, rl.MatrixTranslate(pos.x, pos.y, pos.z)),
+                max = rl.Vector3Transform(game.aabb.max, rl.MatrixTranslate(pos.x, pos.y, pos.z)),
+            }
 		}
 		rl.EndMode3D()
 
