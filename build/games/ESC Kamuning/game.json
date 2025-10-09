@@ -17,7 +17,8 @@
 		"Shaira Sobangee"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://cicerolb.itch.io/esc-kamuning",
 	"game_file": "game/GP3_Finals.exe"

@@ -13,7 +13,8 @@
 		"Seifer Albacete"
 	],
 	"supported_controls": [
-		"Keyboard/Mouse"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://zsfer.itch.io/mother",
 	"game_file": "game/MOTHER.exe"

@@ -12,7 +12,8 @@
 		"Justin Joseph"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://jurou-kohishiro.itch.io/ordinary-hour",
 	"game_file": "game/OrdinaryHour.exe"

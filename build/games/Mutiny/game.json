@@ -16,8 +16,7 @@
 		"Aaron Smith Magat"
 	],
 	"supported_controls": [
-		"kbm",
-		"controller"
+		"Controller"
 	],
 	"download_link": "https://zsfer.itch.io/mutiny",
 	"game_file": "game/Mutiny.exe"

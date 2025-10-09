@@ -25,7 +25,8 @@
 		"Nathan Josh Alilam"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://sbsonk.itch.io/risk-of-fail",
 	"game_file": "game/Risk Of Fail.exe"

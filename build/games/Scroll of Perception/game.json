@@ -17,7 +17,8 @@
 		"Earl Josh Santos"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://nocturnal-entertainments.itch.io/sop",
 	"game_file": "game/Scroll Of Perception.exe"

@@ -16,7 +16,8 @@
 		"Nicaia Enna Divina"
 	],
 	"supported_controls": [
-		"kbm"
+		"Keyboard",
+		"Mouse"
 	],
 	"download_link": "https://casmonavid.itch.io/under-the-skin",
 	"game_file": "game/Under The Skin.exe"

@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 package main
 import "core:encoding/json"
 import "core:flags"
@@ -13,12 +14,24 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.3.2"
+TITLE :: "UnENDING v1.3.3"
 V2f :: [2]f32
 V3f :: [3]f32
 V2i :: [2]i32
 
 BOX_OFFSETS :: 4.0
+
+Supported_Control :: enum {
+	Keyboard,
+	Mouse,
+	Controller,
+}
+
+INPUT_TEXTURES := map[Supported_Control]cstring {
+	.Keyboard   = "keyboard",
+	.Mouse      = "mouse",
+	.Controller = "controller",
+}
 
 Game :: struct {
 	name:               string,
@@ -26,8 +39,8 @@ Game :: struct {
 	genres:             []string,
 	developers:         []string,
 	members:            []string,
-	supported_controls: []string,
 	download_link:      string,
+	supported_controls: []Supported_Control,
 	fullpath:           string,
 	game_file:          string,
 	model:              rl.Model,
@@ -85,6 +98,8 @@ load_all_games :: proc() {
 		game_info: Game
 		json_err := json.unmarshal(game_info_data, &game_info)
 		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
+
+		log.info(game_info)
 
 		if game_info.hidden {
 			continue
@@ -147,15 +162,13 @@ move_camera_to_curr :: proc(reset_timer: bool = true) {
 draw_basic_details :: proc(game: Game) {
 	name := to_cstr(game.name)
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-	tags := fmt.ctprintf(
-		"{}\t-\t{}",
-		strings.join(game.genres, ", ", context.temp_allocator),
-		strings.join(game.supported_controls, ", ", context.temp_allocator),
-	)
+	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
 	center := (rl.GetScreenWidth() / 2)
+
+	y := la.floor(f32(rl.GetScreenHeight()) * .74)
+
 	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
-	y := la.floor(f32(rl.GetScreenHeight()) * .78)
 	rl.DrawTextEx(fonts["title"], name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
 
 	y += 50
@@ -165,6 +178,20 @@ draw_basic_details :: proc(game: Game) {
 	y += 32
 	line_width = rl.MeasureTextEx(fonts["body_italic"], tags, 18, 1)
 	rl.DrawTextEx(fonts["body_italic"], tags, {f32(center) - line_width.x / 2, y}, 18, 1, rl.WHITE)
+
+	y += 32
+	x := f32(center) - f32((32 / 2) * len(game.supported_controls))
+	for c, i in game.supported_controls {
+		tex := textures[INPUT_TEXTURES[c]]
+		rl.DrawTexturePro(
+			tex,
+			rl.Rectangle{0, 0, f32(tex.width), f32(tex.height)},
+			rl.Rectangle{x + f32(i * 32), y, 32, 32},
+			{},
+			0,
+			rl.WHITE,
+		)
+	}
 }
 
 Detail_Tab :: enum {
@@ -290,11 +317,11 @@ main :: proc() {
 
 	rl_flags: rl.ConfigFlags = {.MSAA_4X_HINT, .VSYNC_HINT}
 	w, h: i32 = 1600, 900
-	if launch_flags.fullscreen {
-		rl_flags += {.FULLSCREEN_MODE}
-		w = rl.GetMonitorWidth(0)
-		h = rl.GetMonitorHeight(0)
-	}
+	//if launch_flags.fullscreen {
+	//	rl_flags += {.FULLSCREEN_MODE}
+	//	w = rl.GetMonitorWidth(0)
+	//	h = rl.GetMonitorHeight(0)
+	//}
 
 	rl.SetConfigFlags(rl_flags)
 	rl.InitWindow(w, h, TITLE)
@@ -322,8 +349,14 @@ main :: proc() {
 
 	load_texture("bg")
 	load_texture("itch")
+
+	// ui icons
 	load_texture("left_chev")
 	load_texture("right_chev")
+	load_texture("keyboard")
+	load_texture("mouse")
+	load_texture("controller")
+
 	load_all_games()
 
 	game_camera = rl.Camera3D {
