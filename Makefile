@@ -2,7 +2,7 @@ BUILD_DIR = ./build
 TARGET = unending
 
 COMP_FLAGS = -vet-style -vet-semicolon -o:speed
-FLAGS = --fullscreen false
+FLAGS = --fullscreen=true
 
 .PHONY: all build
 all: build run

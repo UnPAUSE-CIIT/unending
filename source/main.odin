@@ -99,8 +99,6 @@ load_all_games :: proc() {
 		json_err := json.unmarshal(game_info_data, &game_info)
 		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
 
-		log.info(game_info)
-
 		if game_info.hidden {
 			continue
 		}
@@ -317,11 +315,11 @@ main :: proc() {
 
 	rl_flags: rl.ConfigFlags = {.MSAA_4X_HINT, .VSYNC_HINT}
 	w, h: i32 = 1600, 900
-	//if launch_flags.fullscreen {
-	//	rl_flags += {.FULLSCREEN_MODE}
-	//	w = rl.GetMonitorWidth(0)
-	//	h = rl.GetMonitorHeight(0)
-	//}
+	if launch_flags.fullscreen {
+		rl_flags += {.FULLSCREEN_MODE}
+		w = rl.GetMonitorWidth(0)
+		h = rl.GetMonitorHeight(0)
+	}
 
 	rl.SetConfigFlags(rl_flags)
 	rl.InitWindow(w, h, TITLE)
