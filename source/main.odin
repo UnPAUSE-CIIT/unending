@@ -11,10 +11,8 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-BOX_OFFSETS :: 4.0
-
-// @TODO, use screen/panel contexts/flags instead of these bools
 g_config: Config
+
 g_games: [dynamic]Game
 active_gamepad: i32 = 0
 currently_selected: int = 0
@@ -40,7 +38,7 @@ move_dir :: proc(dir: int, reset_timer: bool = true) {
 	move_camera_to_curr(reset_timer = reset_timer)
 }
 
-// `on_move_complete` is so bad please i need to rewrite this this is so bad
+BOX_OFFSETS :: 4.0
 move_camera_to_curr :: proc(reset_timer: bool = true) {
 	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
 
@@ -51,7 +49,7 @@ move_camera_to_curr :: proc(reset_timer: bool = true) {
 
 	camera_target_position = V3f{trg_pos.x, trg_pos.y, 5}
 	do_camera_move = true
-	current_tab = .General
+	current_tab = .General // force back to main screen
 
 	if reset_timer do idle_timer = 0
 	is_demo_mode = false

@@ -10,5 +10,5 @@ all: build run
 build:
 	odin build source $(COMP_FLAGS) -out:$(BUILD_DIR)/$(TARGET)
 
-run: 
+run:
 	$(BUILD_DIR)/$(TARGET) $(FLAGS)
