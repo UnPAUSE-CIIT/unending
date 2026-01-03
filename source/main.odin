@@ -1,7 +1,4 @@
-#+feature dynamic-literals
 package main
-import "core:encoding/json"
-import "core:flags"
 import "core:fmt"
 import "core:log"
 import la "core:math/linalg"
@@ -14,51 +11,12 @@ import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
-TITLE :: "UnENDING v1.3.3"
-V2f :: [2]f32
-V3f :: [3]f32
-V2i :: [2]i32
-
 BOX_OFFSETS :: 4.0
 
-Supported_Control :: enum {
-	Keyboard,
-	Mouse,
-	Controller,
-}
-
-INPUT_TEXTURES := map[Supported_Control]cstring {
-	.Keyboard   = "keyboard",
-	.Mouse      = "mouse",
-	.Controller = "controller",
-}
-
-Game :: struct {
-	name:               string,
-	description:        string,
-	genres:             []string,
-	developers:         []string,
-	members:            []string,
-	download_link:      string,
-	supported_controls: []Supported_Control,
-	fullpath:           string,
-	game_file:          string,
-	model:              rl.Model,
-	texture:            rl.Texture2D,
-	rotation:           f32,
-	hidden:             bool,
-	qr_img:             rl.Texture2D,
-	aabb:               rl.BoundingBox,
-	tr_aabb:            rl.BoundingBox,
-}
-
-Launch_Flags :: struct {
-	fullscreen: bool,
-}
-
 // @TODO, use screen/panel contexts/flags instead of these bools
+g_config: Config
+g_games: [dynamic]Game
 active_gamepad: i32 = 0
-g_games := make([dynamic]Game)
 currently_selected: int = 0
 is_viewing_game_details := false
 is_showing_qr := false
@@ -73,65 +31,6 @@ AFK_DEMO_THRESHOLD :: f32(30.0)
 DEMO_SHIFT_DURATION :: 5
 is_demo_mode := false
 
-load_all_games :: proc() {
-	dir_handle, dir_err := os.open("games")
-	if dir_err != nil {
-		log.error("dir err", dir_err)
-		return
-	}
-	defer os.close(dir_handle)
-
-	entries, err := os.read_dir(dir_handle, -1, context.temp_allocator)
-	assert(err == nil, "err fetching game infos")
-	defer delete(entries, context.temp_allocator)
-
-	for &entry in entries {
-		if !entry.is_dir {
-			continue
-		}
-
-		game_info_data, ok := os.read_entire_file_from_filename(
-			fmt.tprintf("%s/game.json", entry.fullpath),
-		)
-		assert(ok, fmt.tprint("failed to read game info for:", entry.name))
-
-		game_info: Game
-		json_err := json.unmarshal(game_info_data, &game_info)
-		assert(json_err == nil, fmt.tprint("error reading", entry.name, json_err))
-
-		if game_info.hidden {
-			continue
-		}
-
-		game_info.fullpath = strings.clone(entry.fullpath)
-
-		// load model
-		game_info.model = rl.LoadModel("assets/box_art_base.glb")
-		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
-		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
-
-		game_info.qr_img = rl.LoadTexture(to_cstr("%s/qr.png", entry.fullpath))
-		game_info.aabb = rl.GetMeshBoundingBox(game_info.model.meshes[0])
-		append(&g_games, game_info)
-	}
-
-	// @TODO remove when org weave is done ?
-	// force mutiny to be first in list
-	{
-		mutiny_id: int = -1
-		for game, i in g_games {
-			if game.name == "Mutiny" {
-				mutiny_id = i
-				continue
-			}
-		}
-
-		prev_one := g_games[0]
-		g_games[0] = g_games[mutiny_id]
-		g_games[mutiny_id] = prev_one
-	}
-}
-
 move_dir :: proc(dir: int, reset_timer: bool = true) {
 	if is_game_launched {
 		return
@@ -140,6 +39,7 @@ move_dir :: proc(dir: int, reset_timer: bool = true) {
 	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
 	move_camera_to_curr(reset_timer = reset_timer)
 }
+
 // `on_move_complete` is so bad please i need to rewrite this this is so bad
 move_camera_to_curr :: proc(reset_timer: bool = true) {
 	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
@@ -304,8 +204,9 @@ draw_nav_buttons :: proc() {
 }
 
 main :: proc() {
-	launch_flags: Launch_Flags
-	flags.parse(&launch_flags, os.args[1:], .Unix)
+	init_config(&g_config)
+	init_resources()
+	g_games = make([dynamic]Game)
 
 	// mac doesnt use app dir as working directory
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
@@ -313,17 +214,11 @@ main :: proc() {
 	logger := log.create_console_logger()
 	context.logger = logger
 
-	rl_flags: rl.ConfigFlags = {.MSAA_4X_HINT, .VSYNC_HINT}
-	w, h: i32 = 1600, 900
-	if launch_flags.fullscreen {
-		rl_flags += {.FULLSCREEN_MODE}
-		w = rl.GetMonitorWidth(0)
-		h = rl.GetMonitorHeight(0)
-	}
-
-	rl.SetConfigFlags(rl_flags)
-	rl.InitWindow(w, h, TITLE)
+	// init raylib
+	rl.SetConfigFlags(g_config.rl_flags)
+	rl.InitWindow(g_config.window_size.x, g_config.window_size.y, g_config.window_title)
 	defer rl.CloseWindow()
+	rl.SetExitKey(.F10)
 
 	// force check which gamepad works
 	for i in 0 ..< 10 {
@@ -334,8 +229,7 @@ main :: proc() {
 		}
 	}
 
-	rl.SetExitKey(.F10)
-
+	// :load resources
 	rl.InitAudioDevice()
 	load_sound("sfx_launch")
 
@@ -468,7 +362,7 @@ main :: proc() {
 			rl.WHITE,
 		)
 
-		rl.DrawTextEx(fonts["title"], TITLE, {10, 10}, 24, 2, {255, 255, 255, 50})
+		rl.DrawTextEx(fonts["title"], g_config.window_title, {10, 10}, 24, 2, {255, 255, 255, 50})
 
 		// :bottom bar
 		bar_height := i32(72)

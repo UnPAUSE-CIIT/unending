@@ -18,10 +18,6 @@ load_texture :: proc(image_name: cstring) {
 	textures[image_name] = tex
 }
 
-@(private = "file")
-runes := utf8.string_to_runes(
-	" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~—–",
-)
 load_font :: proc(font_name: cstring, font_size: i32 = 64) {
 	f := rl.LoadFontEx(res(font_name, ".ttf"), font_size, raw_data(runes), i32(len(runes)))
 	rl.SetTextureFilter(f.texture, .TRILINEAR)
@@ -33,6 +29,14 @@ load_sound :: proc(sound_name: cstring) {
 	s := rl.LoadSound(res(sound_name, ".wav"))
 
 	sounds[sound_name] = s
+}
+
+@(private = "file")
+runes: []rune 
+init_resources:: proc() {
+	runes = utf8.string_to_runes(
+		" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~—–",
+	)
 }
 
 free_resources :: proc() {

@@ -1,5 +1,5 @@
 BUILD_DIR = ./build
-TARGET = unending
+TARGET = unending.exe
 
 COMP_FLAGS = -vet-style -vet-semicolon -o:speed
 FLAGS = --fullscreen=true
