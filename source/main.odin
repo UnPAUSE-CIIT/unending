@@ -204,12 +204,12 @@ draw_nav_buttons :: proc() {
 }
 
 main :: proc() {
+	// mac doesnt use app dir as working directory
+	rl.ChangeDirectory(rl.GetApplicationDirectory())
+
 	init_config(&g_config)
 	init_resources()
 	g_games = make([dynamic]Game)
-
-	// mac doesnt use app dir as working directory
-	rl.ChangeDirectory(rl.GetApplicationDirectory())
 
 	logger := log.create_console_logger()
 	context.logger = logger

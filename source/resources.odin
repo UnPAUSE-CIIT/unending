@@ -1,7 +1,6 @@
 package main
 
 import "core:fmt"
-import "core:log"
 import "core:unicode/utf8"
 import rl "vendor:raylib"
 

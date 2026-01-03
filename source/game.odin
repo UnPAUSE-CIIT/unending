@@ -40,7 +40,7 @@ INPUT_TEXTURES := map[Supported_Control]cstring {
 
 
 load_all_games :: proc() {
-	dir_handle, dir_err := os.open("games")
+	dir_handle, dir_err := os.open(g_config.games_path)
 	if dir_err != nil {
 		log.error("dir err", dir_err)
 		return
