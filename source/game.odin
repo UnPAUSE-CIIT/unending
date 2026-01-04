@@ -39,7 +39,9 @@ INPUT_TEXTURES := map[Supported_Control]cstring {
 }
 
 
+g_games: [dynamic]Game
 load_all_games :: proc() {
+	g_games = make([dynamic]Game)
 	dir_handle, dir_err := os.open(g_config.games_path)
 	if dir_err != nil {
 		log.error("dir err", dir_err)
@@ -80,4 +82,12 @@ load_all_games :: proc() {
 		game_info.aabb = rl.GetMeshBoundingBox(game_info.model.meshes[0])
 		append(&g_games, game_info)
 	}
+}
+
+free_all_games :: proc() {
+	for &g in g_games {
+		rl.UnloadModel(g.model)
+		rl.UnloadTexture(g.texture)
+	}
+	delete(g_games)
 }

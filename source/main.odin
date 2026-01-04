@@ -2,18 +2,12 @@ package main
 import "core:fmt"
 import "core:log"
 import la "core:math/linalg"
-import "core:os"
-import "core:os/os2"
 import "core:strings"
-import "core:sync/chan"
-import "core:thread"
-import "core:unicode/utf8"
 
 import rl "vendor:raylib"
 
 g_config: Config
 
-g_games: [dynamic]Game
 active_gamepad: i32 = 0
 currently_selected: int = 0
 is_viewing_game_details := false
@@ -60,20 +54,15 @@ draw_basic_details :: proc(game: Game) {
 	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
 	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
 
-	center := (rl.GetScreenWidth() / 2)
+	center := (f32)(rl.GetScreenWidth() / 2)
 
 	y := la.floor(f32(rl.GetScreenHeight()) * .74)
 
-	line_width := rl.MeasureTextEx(fonts["title"], name, 48, 2)
-	rl.DrawTextEx(fonts["title"], name, {f32(center) - line_width.x / 2, y}, 48, 2, rl.WHITE)
-
+	draw_text(name, 48, "title", center, y, .Center)
 	y += 50
-	line_width = rl.MeasureTextEx(fonts["body"], devs, 24, 1)
-	rl.DrawTextEx(fonts["body"], devs, {f32(center) - line_width.x / 2, y}, 24, 1, rl.WHITE)
-
+	draw_text(devs, 24, "body", center, y, .Center)
 	y += 32
-	line_width = rl.MeasureTextEx(fonts["body_italic"], tags, 18, 1)
-	rl.DrawTextEx(fonts["body_italic"], tags, {f32(center) - line_width.x / 2, y}, 18, 1, rl.WHITE)
+	draw_text(tags, 18, "body_italic", center, y, .Center)
 
 	y += 32
 	x := f32(center) - f32((32 / 2) * len(game.supported_controls))
@@ -207,7 +196,6 @@ main :: proc() {
 
 	init_config(&g_config)
 	init_resources()
-	g_games = make([dynamic]Game)
 
 	logger := log.create_console_logger()
 	context.logger = logger
@@ -471,12 +459,8 @@ main :: proc() {
 		free_all(context.temp_allocator)
 	}
 
-	for &game in g_games {
-		rl.UnloadModel(game.model)
-		rl.UnloadTexture(game.texture)
-	}
-
 	free_resources()
+	free_all_games()
 	destroy_game_runner()
 
 	rl.CloseAudioDevice()

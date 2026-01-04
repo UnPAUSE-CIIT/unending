@@ -50,4 +50,5 @@ free_resources :: proc() {
 	for _, &sound in sounds {
 		rl.UnloadSound(sound)
 	}
+	runes = nil
 }
