@@ -8,7 +8,6 @@ import rl "vendor:raylib"
 
 g_config: Config
 
-active_gamepad: i32 = 0
 currently_selected: int = 0
 is_viewing_game_details := false
 is_showing_qr := false
@@ -23,17 +22,17 @@ AFK_DEMO_THRESHOLD :: f32(30.0)
 DEMO_SHIFT_DURATION :: 5
 is_demo_mode := false
 
-move_dir :: proc(dir: int, reset_timer: bool = true) {
+move_dir :: proc(dir: int) {
 	if is_game_launched {
 		return
 	}
 
 	currently_selected = (currently_selected + dir + len(g_games)) % len(g_games)
-	move_camera_to_curr(reset_timer = reset_timer)
+	move_camera_to_curr()
 }
 
 BOX_OFFSETS :: 4.0
-move_camera_to_curr :: proc(reset_timer: bool = true) {
+move_camera_to_curr :: proc() {
 	trg_pos := V3f{f32(currently_selected) * BOX_OFFSETS, 0.0, 0.0}
 
 	if is_viewing_game_details {
@@ -45,33 +44,29 @@ move_camera_to_curr :: proc(reset_timer: bool = true) {
 	do_camera_move = true
 	current_tab = .General // force back to main screen
 
-	if reset_timer do idle_timer = 0
-	is_demo_mode = false
+	if is_demo_mode {
+		idle_timer = 0
+	}
+	else {
+		is_demo_mode = false
+	}
 }
 
 draw_basic_details :: proc(game: Game) {
-	name := to_cstr(game.name)
-	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-	tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
-
 	center := (f32)(rl.GetScreenWidth() / 2)
+	layout := layout_create(center, la.floor(f32(rl.GetScreenHeight()) * .74))
 
-	y := la.floor(f32(rl.GetScreenHeight()) * .74)
+	layout_push_text(&layout, to_cstr(game.name), 48, "title", .Center)
+	layout_push_text(&layout, to_cstr(strings.join(game.developers, ", ", context.temp_allocator)), 24, "body", .Center)
+	layout_push_text(&layout, to_cstr(strings.join(game.genres, ", ", context.temp_allocator)), 18, "body_italic", .Center)
 
-	draw_text(name, 48, "title", center, y, .Center)
-	y += 50
-	draw_text(devs, 24, "body", center, y, .Center)
-	y += 32
-	draw_text(tags, 18, "body_italic", center, y, .Center)
-
-	y += 32
 	x := f32(center) - f32((32 / 2) * len(game.supported_controls))
 	for c, i in game.supported_controls {
 		tex := textures[INPUT_TEXTURES[c]]
 		rl.DrawTexturePro(
 			tex,
 			rl.Rectangle{0, 0, f32(tex.width), f32(tex.height)},
-			rl.Rectangle{x + f32(i * 32), y, 32, 32},
+			rl.Rectangle{x + f32(i * 32), layout.curr_y, 32, 32},
 			{},
 			0,
 			rl.WHITE,
@@ -86,83 +81,81 @@ Detail_Tab :: enum {
 current_tab: Detail_Tab = .General
 draw_complete_details :: proc(game: Game) {
 	x := la.floor(f32(rl.GetScreenWidth()) * 0.1)
-	y := la.floor(f32(rl.GetScreenHeight()) * 0.2)
+	y := la.floor(f32(rl.GetScreenHeight()) * 0.1)
 
-	padding := f32(30)
+	details_panel := layout_create(x,y)
 
-	draw_button(
-		text = "Info",
-		bounds = rl.Rectangle{x + 5, y - padding - 64, 100, 54},
-		on_click = proc() {
+	// Top info buttons
+	{
+		layout := layout_create(x, y, direction = .Horizontal)
+		layout_push_sub_layout(&details_panel, &layout)
+		if layout_push_text_button(&layout, text = "Info") {
 			current_tab = .General
-		},
-	)
-	draw_button(
-		text = "Credits",
-		bounds = rl.Rectangle{x + 110, y - padding - 64, 100, 54},
-		on_click = proc() {
+		}
+		if layout_push_text_button(&layout, text = "Credits") {
 			current_tab = .Credits
-		},
-	)
-	draw_button(
-		text = "Launch >",
-		bounds = rl.Rectangle{900 + padding * 2, y - padding - 64, 130, 54},
-		on_click = proc() {
-			_launch_game(g_games[currently_selected])
+		}
+		if layout_push_text_button(&layout, text = "Launch") {
+			launch_game(g_games[currently_selected])
 			move_camera_to_curr()
-		},
-	)
-
-	rl.DrawRectangleRounded(
-		rl.Rectangle{x - padding, y - padding, 900 + padding * 2, f32(rl.GetScreenHeight()) * 0.7},
-		0.05,
-		18,
-		{0, 0, 0, 50},
-	)
-
-	// header
-	itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
-	draw_image_button(
-		image = textures["itch"],
-		alpha = {200, 255},
-		bounds = itch_rec,
-		on_click = proc() {
-			is_showing_qr = true
-		},
-	)
-
-	name := to_cstr(game.name)
-	devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-
-	rl.DrawTextEx(fonts["title"], name, {x, y}, 52, 2, rl.WHITE)
-	y += 52 + 18
-
-	rl.DrawTextEx(fonts["body_italic"], devs, {x, y}, 18, 1, rl.WHITE)
-	y += 48
-
-	if current_tab == .General {
-		desc := to_cstr(game.description)
-		tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
-
-		last_y := draw_wrapped_text(fonts["body"], game.description, {x, y}, 24, 1, 900, rl.WHITE)
-		y = last_y + 24
-
-		rl.DrawTextEx(fonts["body_italic"], to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
-		y += 24 + 6
-	} else {
-		rl.DrawTextEx(fonts["body_italic"], "Members", {x, y}, 32, 1, rl.WHITE)
-		y += 32 + 18
-		members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
-		rl.DrawTextEx(fonts["body"], members, {x, y}, 24, 1, rl.WHITE)
+		}
 	}
-}
 
-@(private = "file")
-_launch_game :: proc(game: Game) {
-	run_game_threaded(game)
-	is_viewing_game_details = false
+	{
+		layout := layout_create(
+					x = x, 
+					y = y,
+					background_color = {0,0,0, 50},
+					padding = PANEL_DEFAULT_PADDING,
+				)
 
-	rl.PlaySound(sounds["sfx_launch"])
+		layout_push_sub_layout(&details_panel, &layout)
+
+		// rl.DrawRectangleRounded(
+		// 	rl.Rectangle{x - padding, y - padding, 900 + padding * 2, f32(rl.GetScreenHeight()) * 0.7},
+		// 	0.05,
+		// 	18,
+		// 	{0, 0, 0, 50},
+		// )
+
+		// header
+		// itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
+		// if draw_image_button(
+		// 	image = textures["itch"],
+		// 	alpha = {200, 255},
+		// 	bounds = itch_rec,
+		// ) {
+		// 	is_showing_qr = true
+		// }
+
+		name := to_cstr(game.name)
+		devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
+		layout_push_text( &layout, game.name, 52, "title", .Left)
+
+		rl.DrawTextEx(fonts["title"], name, {x, y}, 52, 2, rl.WHITE)
+		y += 52 + 18
+
+		rl.DrawTextEx(fonts["body_italic"], devs, {x, y}, 18, 1, rl.WHITE)
+		y += 48
+
+		if current_tab == .General {
+			desc := to_cstr(game.description)
+			tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
+
+			last_y := draw_wrapped_text(fonts["body"], game.description, {x, y}, 24, 1, 900, rl.WHITE)
+			y = last_y + 24
+
+			rl.DrawTextEx(fonts["body_italic"], to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
+			y += 24 + 6
+		} else {
+			rl.DrawTextEx(fonts["body_italic"], "Members", {x, y}, 32, 1, rl.WHITE)
+			y += 32 + 18
+			members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
+			rl.DrawTextEx(fonts["body"], members, {x, y}, 24, 1, rl.WHITE)
+		}
+
+		layout_update_rect(&layout)
+	}
 }
 
 draw_nav_buttons :: proc() {
@@ -170,24 +163,22 @@ draw_nav_buttons :: proc() {
 	y := f32(rl.GetScreenHeight() / 2 - img.height / 2)
 	alpha: V2i = {20, 50}
 
-	draw_image_button(
+	if draw_image_button(
 		image = textures["left_chev"],
 		bounds = rl.Rectangle{20, y, 128, 128},
 		alpha = alpha,
-		on_click = proc() {
-			move_dir(-1)
-		},
-	)
+	) {
+		move_dir(-1)
+	}
 
 	right := f32(rl.GetScreenWidth() - 20 - img.width)
-	draw_image_button(
+	if draw_image_button(
 		image = textures["right_chev"],
 		bounds = rl.Rectangle{right, y, 128, 128},
 		alpha = alpha,
-		on_click = proc() {
-			move_dir(1)
-		},
-	)
+	) {
+		move_dir(1)
+	}
 }
 
 main :: proc() {
@@ -206,14 +197,7 @@ main :: proc() {
 	defer rl.CloseWindow()
 	rl.SetExitKey(.F10)
 
-	// force check which gamepad works
-	for i in 0 ..< 10 {
-		if rl.IsGamepadAvailable(i32(i)) {
-			active_gamepad = i32(i)
-			log.info("found gamepad:", active_gamepad)
-			break
-		}
-	}
+	setup_gamepad()
 
 	// :load resources
 	rl.InitAudioDevice()
@@ -267,31 +251,23 @@ main :: proc() {
 		// :Update
 		if !is_game_launched {
 			if !is_showing_qr {
-				if rl.IsKeyPressed(.A) ||
-				   rl.IsKeyPressed(.LEFT) ||
-				   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_LEFT) {
+				if on_left_pressed() {
 					move_dir(-1)
 				}
-				if rl.IsKeyPressed(.D) ||
-				   rl.IsKeyPressed(.RIGHT) ||
-				   rl.IsGamepadButtonPressed(active_gamepad, .LEFT_FACE_RIGHT) {
+				if on_right_pressed() {
 					move_dir(1)
 				}
-				if rl.IsKeyPressed(.ENTER) ||
-				   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_DOWN) {
+				if on_submit_pressed() {
 					if !is_viewing_game_details {
 						is_viewing_game_details = true
 					} else {
-						_launch_game(g_games[currently_selected])
+						launch_game(g_games[currently_selected])
 					}
 					move_camera_to_curr()
 				}
 			}
 
-			if rl.IsKeyPressed(.ESCAPE) ||
-			   rl.IsKeyPressed(.BACKSPACE) ||
-			   rl.IsGamepadButtonPressed(active_gamepad, .RIGHT_FACE_RIGHT) ||
-			   rl.IsMouseButtonPressed(.RIGHT) {
+			if on_cancel_pressed() {
 				if is_viewing_game_details {
 					is_viewing_game_details = false
 				}
@@ -305,9 +281,6 @@ main :: proc() {
 		}
 
 		ray := rl.GetScreenToWorldRay(rl.GetMousePosition(), game_camera)
-
-		// @TODO optimize this? this loops through ALL of the box arts
-		// an optimization would be checking 3 models at a time (before, current, and next)
 		for g, i in g_games {
 			hit := rl.GetRayCollisionBox(ray, g.tr_aabb)
 			if rl.IsMouseButtonPressed(.LEFT) && hit.hit {
@@ -326,8 +299,8 @@ main :: proc() {
 		if idle_timer > AFK_DEMO_THRESHOLD {
 			if i32(idle_timer) % DEMO_SHIFT_DURATION == 0 &&
 			   i32(idle_timer) != last_demo_shift_trigger {
-				move_dir(1, false)
 				is_demo_mode = true
+				move_dir(1)
 				last_demo_shift_trigger = i32(idle_timer)
 			}
 		}
@@ -358,10 +331,6 @@ main :: proc() {
 		// @TODO use sprites for this, use a spritesheet or use a font?
 		bottom_bar_text: cstring =
 			!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
-
-		if is_demo_mode {
-			bottom_bar_text = "DEMO MODE! Press A,D or <-, -> to select a game"
-		}
 
 		if is_game_launched {
 			bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)

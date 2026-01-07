@@ -84,6 +84,13 @@ load_all_games :: proc() {
 	}
 }
 
+launch_game :: proc(game: Game) {
+	run_game_threaded(game)
+	is_viewing_game_details = false
+
+	rl.PlaySound(sounds["sfx_launch"])
+}
+
 free_all_games :: proc() {
 	for &g in g_games {
 		rl.UnloadModel(g.model)
