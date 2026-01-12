@@ -46,11 +46,11 @@ draw_image_button :: proc(
 
 // @returns button size (v2f), is pressed (bool)
 draw_text_button :: proc(text: cstring, x, y: f32, w: f32 = 0) -> (V2f, bool) {
-	width := w + BUTTON_DEFAULT_PADDING.x
-	line_size := rl.MeasureTextEx(fonts["body"], text, 18, 2)
+	width := w + BUTTON_DEFAULT_PADDING.x * 2
+	line_size := rl.MeasureTextEx(fonts["body"], text, 18, 1)
 
 	if w == 0 { // fit content
-		width = line_size.x + BUTTON_DEFAULT_PADDING.x
+		width = line_size.x + BUTTON_DEFAULT_PADDING.x * 2
 	}
 
 	bounds := rl.Rectangle{
@@ -68,7 +68,10 @@ draw_text_button :: proc(text: cstring, x, y: f32, w: f32 = 0) -> (V2f, bool) {
 	rl.DrawTextEx(
 		fonts["body"],
 		text,
-		{bounds.x + bounds.width / 2 - line_size.x / 2, bounds.y + line_size.y / 2},
+		V2f{
+			x + (bounds.width - line_size.x) / 2,
+			y + (bounds.height - line_size.y) / 2,
+		},
 		18,
 		1,
 		rl.WHITE,
@@ -192,6 +195,16 @@ layout_create :: proc(
 		direction = direction,
 		padding = padding,
 		background_color = background_color,
+	}
+}
+
+layout_push_space :: proc( layout: ^Layout, a: f32 ) {
+	if layout.direction == .Vertical {
+		layout.curr.y += a + layout.spacing
+		layout.height = layout.curr.y - layout.top.y
+	} else {
+		layout.curr.x += a + layout.spacing
+		layout.width = layout.curr.x - layout.top.x
 	}
 }
 

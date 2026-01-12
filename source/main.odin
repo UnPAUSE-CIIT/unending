@@ -98,28 +98,21 @@ draw_complete_details :: proc(game: Game) {
 			launch_game( g_games[currently_selected] )
 			move_camera_to_curr()
 		}
+		if layout_push_text_button( &layout, text = "View download link" ) {
+			is_showing_qr = true
+		}
 
 		layout_append( &panel, &layout )
 	}
+
+	layout_push_space( &panel, 12 )
 
 	{
 		layout := layout_create(
 					x = panel.curr.x, 
 					y = panel.curr.y,
 					max_width = 900,
-					background_color = {0,0,0, 50},
-					padding = PANEL_DEFAULT_PADDING,
 				)
-
-		// header
-		// itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
-		// if draw_image_button(
-		// 	image = textures["itch"],
-		// 	alpha = {200, 255},
-		// 	bounds = itch_rec,
-		// ) {
-		// 	is_showing_qr = true
-		// }
 
 		// header
 		{
@@ -149,8 +142,6 @@ draw_complete_details :: proc(game: Game) {
 
 		layout_append( &panel, &layout )
 	}
-
-	// layout_complete( &panel )
 }
 
 draw_nav_buttons :: proc() {
