@@ -8,5 +8,7 @@ JAN 12
 got proper line wrapping working (ty gpt <3)
 
 TODO:
-- move to using Rects for layout (rect.odin exists now)
+- move to using Rects for layout (rect.odin added but not used for now)
+- create python tool for scraping stuff for itch downloader
+	- this should result into a "get-the-files.exe"
 --------
