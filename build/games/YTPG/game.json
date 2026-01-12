@@ -1,0 +1,18 @@
+{
+	"name": "Your Typical Platform Game",
+	"description": "This is basically your typical platform game where you just jump over the platform and finish the levels O,O",
+	"genres": [
+		"2D Platformer"
+	],
+	"developers": [
+		"ZachieCannotDev"
+	],
+	"members": [
+		"James Mykel Ramos"
+	],
+	"supported_controls": [
+		"Keyboard"
+	],
+	"download_link": "https://spacemonkeys.itch.io/deep-space-tavern",
+	"game_file": "game/DeepSpaceTavern.exe"
+}

@@ -1,0 +1,20 @@
+{
+	"name": "Tusok at Tiyaga",
+	"description": "Tusok at Tiyaga is a Filipino-street-vendor-inspired strategic cooking game that highlights the rich culture of the Philippines through its beloved street food. Step into the shoes of a desperate breadwinner who’s fallen into debt and must fight for their family’s future. With loan sharks breathing down your neck, the only path forward is to turn your cooking skills into a thriving business. Every meal matters—not just for your customers, but for your family’s survival.",
+	"genres": [
+		"Cooking Simulation"
+	],
+	"developers": [
+		"Deep Fried Productions"
+	],
+	"members": [
+		"Marie Fiona Cortes",
+		"Lynor Mel Molon",
+		"Michaela Vivienne Santiago"
+	],
+	"supported_controls": [
+		"Mouse"
+	],
+	"download_link": "https://spacemonkeys.itch.io/deep-space-tavern",
+	"game_file": "game/DeepSpaceTavern.exe"
+}

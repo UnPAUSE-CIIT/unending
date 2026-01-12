@@ -1,0 +1,22 @@
+{
+	"name": "Chop Chop TD",
+	"description": "Chop Chop TD is a 2D top-down tower defense game with a unique restaurant management theme. Instead of weapons, your \"towers\" are food stations. Once placed, they automatically cook and serve their assigned food to any customer in range who has ordered it",
+	"genres": [
+		"Cooking",
+		"Strategy (Tower Defense)"
+	],
+	"developers": [
+		"Bakunawa Studios"
+	],
+	"members": [
+		"Juan Carlos Arimado",
+		"Hunch Danhill F. Lorenzana",
+		"Thomas Jacob A. Cammayo V"
+	],
+	"supported_controls": [
+		"Keyboard",
+		"Mouse"
+	],
+	"download_link": "https://spacemonkeys.itch.io/deep-space-tavern",
+	"game_file": "game/DeepSpaceTavern.exe"
+}

@@ -1,8 +1,20 @@
 package main
 
+/*
+   the UI system consists of 2 UI foundations
+   - rects for overall layout structure (groups)
+   - cursors for individual placement inside a rect/group
+
+   this UI system assumes that you are building either 
+   - LTR (left to right) horizontal layouts
+   - or TTB (top to bottom) vertical layouts
+*/
+
 import "core:fmt"
 import "core:strings"
 import rl "vendor:raylib"
+
+TEXT_DEFAULT_LINE_SPACING :: 2.0
 
 PANEL_DEFAULT_PADDING :: 24.0
 
@@ -72,7 +84,7 @@ Text_Align :: enum {
 }
 
 // @returns line size (V2f)
-draw_text:: proc(text: cstring, font_size: f32, font_name: cstring = "title", x,y: f32, align: Text_Align) -> V2f {
+draw_text:: proc(text: cstring, font_size: f32, font_name: cstring = "title", x,y: f32, align: Text_Align, color: rl.Color = rl.WHITE) -> V2f {
     line_size := rl.MeasureTextEx(fonts[font_name], text, font_size, 2)
 	xoff: f32 = 0.0
 
@@ -85,7 +97,7 @@ draw_text:: proc(text: cstring, font_size: f32, font_name: cstring = "title", x,
 		xoff = line_size.x
 	}
 
-	rl.DrawTextEx(fonts[font_name], text, {x - xoff, y}, font_size, 1, rl.WHITE)
+	rl.DrawTextEx(fonts[font_name], text, {x - xoff, y}, font_size, 1, color)
 
 	return line_size
 }
@@ -99,52 +111,46 @@ draw_wrapped_text :: proc(
 	max_width: f32,
 	color: rl.Color,
 ) -> f32 {
-	words := strings.split(text, " ")
-	line := ""
-	line_y := pos.y
-	line_height: f32
+	curr_y: f32 = 0.0
+	line_height: f32 = font_size + spacing
 
-	for word in words {
-		// simulate adding the next word
-		candidate :=
-			line == "" ? word : strings.join({line, word}, sep = " ", allocator = context.temp_allocator)
+	for line in strings.split_lines(text) {
+		words := strings.split(line, " ")
+		curr_line := ""
 
-		size := rl.MeasureTextEx(font, fmt.ctprintf(candidate), font_size, spacing)
-		line_height = size.y
-		if size.x > max_width {
-			// draw current line
-			rl.DrawTextEx(
-				font,
-				fmt.ctprintf(line),
-				rl.Vector2{pos.x, line_y},
-				font_size,
-				spacing,
-				color,
-			)
-			// start new line
-			line = word
-			line_y += line_height + 5
-		} else {
-			line = candidate
+		for word in words {
+			test_line := fmt.ctprintf( "{}{} ", curr_line, word )
+			if rl.MeasureTextEx( font, test_line, font_size, 2 ).x > max_width {
+				rl.DrawTextEx( 
+					font,
+					fmt.ctprintf(curr_line),
+					V2f{pos.x, pos.y + curr_y},
+					font_size,
+					spacing,
+					color,
+				)
+				curr_y += line_height
+				curr_line = ""
+			}
+
+			curr_line = fmt.tprintf( "{}{} ", curr_line, word )
 		}
+
+		if curr_line != "" {
+			rl.DrawTextEx( 
+					font,
+					fmt.ctprintf(curr_line),
+					V2f{pos.x, pos.y + curr_y},
+					font_size,
+					spacing,
+					color,
+				)
+		}
+
+		curr_y += line_height
 	}
 
-	// draw last line
-	if line != "" {
-		size := rl.MeasureTextEx(font, fmt.ctprintf(line), font_size, spacing)
-		line_height = size.y
-
-		rl.DrawTextEx(
-			font,
-			fmt.ctprintf(line),
-			rl.Vector2{pos.x, line_y},
-			font_size,
-			spacing,
-			color,
-		)
-	}
-
-	return line_y + line_height
+	return curr_y
 }
 
 Layout_Direction :: enum {
@@ -153,10 +159,10 @@ Layout_Direction :: enum {
 }
 
 Layout :: struct {
-	top_x: f32,
-	top_y: f32,
-	curr_y: f32,
-	curr_x: f32,
+	top: V2f,
+	max: V2f,
+	curr: V2f,
+
 	width: f32,
 	height: f32,
 
@@ -169,16 +175,19 @@ Layout :: struct {
 
 layout_create :: proc( 
 	x, y: f32, 
+	max_width: f32 = 0,
+	max_height: f32 = 0,
 	spacing: f32 = 8, 
 	direction: Layout_Direction = .Vertical, 
 	padding: V2f = V2f(0.0), 
 	background_color: rl.Color = {0, 0, 0, 0}
 ) -> Layout {
 	return Layout{
-		top_x = x,
-		top_y = y,
-		curr_y = y,
-		curr_x = x,
+		top = { x, y, },
+		curr = { x, y, },
+		width = 0,
+		height = 0,
+		max = { max_width, max_height },
 		spacing = spacing,
 		direction = direction,
 		padding = padding,
@@ -186,34 +195,62 @@ layout_create :: proc(
 	}
 }
 
-layout_update_rect :: proc( layout: ^Layout ) {
-	layout.height = layout.top_y + layout.curr_y
-	layout.width = layout.top_x + layout.curr_x
-}
+layout_push_text :: proc( layout: ^Layout, str: string, font_size: f32, font_name: cstring, align: Text_Align, wrapped: bool = false, color: rl.Color = rl.WHITE ) {
+	size: V2f
 
-layout_push_text :: proc( layout: ^Layout, str: string, font_size: f32, font_name: cstring, align: Text_Align ) {
-	size := draw_text(to_cstr(str), font_size, font_name, layout.curr_x, layout.curr_y, align)
-	if layout.direction == .Vertical {
-		layout.curr_y += font_size + layout.spacing
+	// prob should force wrapping everywhere if layout has max_width?
+	// tho that is expensive
+	if wrapped {
+		size.y = draw_wrapped_text(
+			fonts[font_name],
+			str,
+			layout.curr,
+			font_size,
+			TEXT_DEFAULT_LINE_SPACING,
+			layout.max.x,
+			color,
+		)
+		size.x = layout.max.x
 	} else {
-		layout.curr_x += size.x + layout.spacing
+		size = draw_text(
+			  to_cstr(str), 
+			  font_size, 
+			  font_name, 
+			  layout.curr.x, 
+			  layout.curr.y, 
+			  align,
+			  color,
+			)
+	} 
+
+	if layout.direction == .Vertical {
+		layout.curr.y += size.y + layout.spacing
+		layout.width = max( layout.width, size.x ) 
+		layout.height = layout.curr.y - layout.top.y
+	} else {
+		layout.curr.x += size.x + layout.spacing
+		layout.width = layout.curr.x - layout.top.x
+		layout.height = max( layout.height, size.y )
 	}
+
 }
 
 layout_push_text_button :: proc(
 	layout: ^Layout,
 	text: cstring, 
 ) -> bool {
-	btn_size, is_pressed := draw_button(
+	size, is_pressed := draw_button(
 		text,
-		layout.curr_x,
-		layout.curr_y,
+		layout.curr.x,
+		layout.curr.y,
 	)
 
 	if layout.direction == .Vertical {
-		layout.curr_y += btn_size.y + layout.spacing
+		layout.curr.y += size.y + layout.spacing
+		layout.width = max( layout.width, size.x )
 	} else {
-		layout.curr_x += btn_size.x + layout.spacing
+		layout.curr.x += size.x + layout.spacing
+		layout.height = max( layout.height, size.y )
 	}
 
 	return is_pressed
@@ -225,12 +262,20 @@ layout_push_image_button :: proc(
 	on_click: proc(),
 	alpha: V2i = {50, 255}, // alpha.x = normal, .y = hovered
 ) {
+	// layout.width = max( layout.width, layout.width + size.x )
+	// layout.height = max( layout.height, layout.height + size.y )
 }
 
-layout_push_sub_layout :: proc( layout: ^Layout, child: ^Layout ) {
-	child.top_x = layout.curr_x
-	child.top_y = layout.curr_y
+layout_complete :: proc( layout: ^Layout ) {
+	rl.DrawRectangle( i32(layout.top.x), i32(layout.top.y), 10, 10, rl.RED )
+	rl.DrawRectangle( i32(layout.top.x), i32(layout.top.y), i32(layout.width), i32(layout.height), { 255, 255, 0, 10 } )
+	rl.DrawRectangle( i32(layout.curr.x), i32(layout.curr.y), 10, 10, rl.BLUE )
+}
 
-	child.curr_x = layout.curr_x
-	child.curr_y = layout.curr_y
+layout_append :: proc( layout: ^Layout, child: ^Layout ) {
+	if layout.direction == .Vertical {
+		layout.curr.y += child.height + layout.spacing
+	} else {
+		layout.curr.x += child.width + layout.spacing
+	}
 }

@@ -56,9 +56,9 @@ draw_basic_details :: proc(game: Game) {
 	center := (f32)(rl.GetScreenWidth() / 2)
 	layout := layout_create(center, la.floor(f32(rl.GetScreenHeight()) * .74))
 
-	layout_push_text(&layout, to_cstr(game.name), 48, "title", .Center)
-	layout_push_text(&layout, to_cstr(strings.join(game.developers, ", ", context.temp_allocator)), 24, "body", .Center)
-	layout_push_text(&layout, to_cstr(strings.join(game.genres, ", ", context.temp_allocator)), 18, "body_italic", .Center)
+	layout_push_text(&layout, game.name, 48, "title", .Center)
+	layout_push_text(&layout, strings.join(game.developers, ", ", context.temp_allocator), 24, "body", .Center)
+	layout_push_text(&layout, strings.join(game.genres, ", ", context.temp_allocator), 18, "body_italic", .Center)
 
 	x := f32(center) - f32((32 / 2) * len(game.supported_controls))
 	for c, i in game.supported_controls {
@@ -66,7 +66,7 @@ draw_basic_details :: proc(game: Game) {
 		rl.DrawTexturePro(
 			tex,
 			rl.Rectangle{0, 0, f32(tex.width), f32(tex.height)},
-			rl.Rectangle{x + f32(i * 32), layout.curr_y, 32, 32},
+			rl.Rectangle{x + f32(i * 32), layout.curr.y, 32, 32},
 			{},
 			0,
 			rl.WHITE,
@@ -81,42 +81,35 @@ Detail_Tab :: enum {
 current_tab: Detail_Tab = .General
 draw_complete_details :: proc(game: Game) {
 	x := la.floor(f32(rl.GetScreenWidth()) * 0.1)
-	y := la.floor(f32(rl.GetScreenHeight()) * 0.1)
+	y := la.floor(f32(rl.GetScreenHeight()) * 0.2)
 
-	details_panel := layout_create(x,y)
+	panel := layout_create( x, y )
 
 	// Top info buttons
 	{
-		layout := layout_create(x, y, direction = .Horizontal)
-		layout_push_sub_layout(&details_panel, &layout)
-		if layout_push_text_button(&layout, text = "Info") {
+		layout := layout_create( x, y, direction = .Horizontal )
+		if layout_push_text_button( &layout, text = "Info" ) {
 			current_tab = .General
 		}
-		if layout_push_text_button(&layout, text = "Credits") {
+		if layout_push_text_button( &layout, text = "Credits" ) {
 			current_tab = .Credits
 		}
-		if layout_push_text_button(&layout, text = "Launch") {
-			launch_game(g_games[currently_selected])
+		if layout_push_text_button( &layout, text = "Launch" ) {
+			launch_game( g_games[currently_selected] )
 			move_camera_to_curr()
 		}
+
+		layout_append( &panel, &layout )
 	}
 
 	{
 		layout := layout_create(
-					x = x, 
-					y = y,
+					x = panel.curr.x, 
+					y = panel.curr.y,
+					max_width = 900,
 					background_color = {0,0,0, 50},
 					padding = PANEL_DEFAULT_PADDING,
 				)
-
-		layout_push_sub_layout(&details_panel, &layout)
-
-		// rl.DrawRectangleRounded(
-		// 	rl.Rectangle{x - padding, y - padding, 900 + padding * 2, f32(rl.GetScreenHeight()) * 0.7},
-		// 	0.05,
-		// 	18,
-		// 	{0, 0, 0, 50},
-		// )
 
 		// header
 		// itch_rec := rl.Rectangle{x + 670, y, 740 * 0.3, 228 * 0.3}
@@ -128,34 +121,36 @@ draw_complete_details :: proc(game: Game) {
 		// 	is_showing_qr = true
 		// }
 
-		name := to_cstr(game.name)
-		devs := to_cstr(strings.join(game.developers, ", ", context.temp_allocator))
-		layout_push_text( &layout, game.name, 52, "title", .Left)
+		// header
+		{
+			header := layout_create(
+				x = layout.curr.x,
+				y = layout.curr.y,
+				max_width = 900,
+			)
+			layout_push_text( &header, game.name, 52, "title", .Left)
+			layout_push_text( &header, strings.join(game.developers, ", ", context.temp_allocator), 18, "body_italic", .Left)
 
-		rl.DrawTextEx(fonts["title"], name, {x, y}, 52, 2, rl.WHITE)
-		y += 52 + 18
+			layout_append( &layout, &header )
+		}
 
-		rl.DrawTextEx(fonts["body_italic"], devs, {x, y}, 18, 1, rl.WHITE)
-		y += 48
-
-		if current_tab == .General {
-			desc := to_cstr(game.description)
-			tags := to_cstr(strings.join(game.genres, ", ", context.temp_allocator))
-
-			last_y := draw_wrapped_text(fonts["body"], game.description, {x, y}, 24, 1, 900, rl.WHITE)
-			y = last_y + 24
-
-			rl.DrawTextEx(fonts["body_italic"], to_cstr("Genres: %s", tags), {x, y}, 24, 1, rl.WHITE)
-			y += 24 + 6
-		} else {
+		switch current_tab {
+		case .General: {
+			layout_push_text( &layout, game.description, 24, "body", .Left, wrapped = true )
+			layout_push_text( &layout, strings.join(game.genres, ", ", context.temp_allocator), 24, "body_italic", .Left )
+		}
+		case .Credits:{
 			rl.DrawTextEx(fonts["body_italic"], "Members", {x, y}, 32, 1, rl.WHITE)
 			y += 32 + 18
 			members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
 			rl.DrawTextEx(fonts["body"], members, {x, y}, 24, 1, rl.WHITE)
 		}
+		}
 
-		layout_update_rect(&layout)
+		layout_append( &panel, &layout )
 	}
+
+	// layout_complete( &panel )
 }
 
 draw_nav_buttons :: proc() {
