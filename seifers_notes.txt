@@ -1,9 +1,11 @@
+BUGS:
+[ ] hitching when closing app (prob memleak)
+[x] QR code box weird as hell
+
+--------
+
 JAN 12
 got proper line wrapping working (ty gpt <3)
-
-
-BUGS:
-- hitching when closing app (prob memleak)
 
 TODO:
 - move to using Rects for layout (rect.odin exists now)

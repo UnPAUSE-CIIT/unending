@@ -370,7 +370,8 @@ main :: proc() {
 
 		// :draw qr
 		if is_showing_qr {
-			qr_box: f32 = 370
+			qr_img := g_games[currently_selected].qr_img
+			qr_box: f32 = 370.0
 			qr_bounds := rl.Rectangle {
 				f32(rl.GetScreenWidth() / 2) - qr_box / 2,
 				f32(rl.GetScreenHeight() / 2) - qr_box / 2,
@@ -387,8 +388,8 @@ main :: proc() {
 				rl.Color{0, 0, 0, 200},
 			)
 			rl.DrawTexturePro(
-				g_games[currently_selected].qr_img,
-				{0, 0, 370, 370},
+				qr_img,
+				{0, 0, f32(qr_img.width), f32(qr_img.height)},
 				qr_bounds,
 				{},
 				0,
