@@ -1,0 +1,21 @@
+{
+    "name": "Loophole",
+    "description": "EXCLUSIVE FOR CIIT OPEN HOUSE 2026!\n\nLoophole is a 3D puzzle platformer with a top-down perspective, built around a unique time-loop cloning mechanic. Think steps ahead to choreograph a symphony of your past actions to solve puzzles that are impossible for just one person to overcome.",
+    "genre": [
+        "Puzzle"
+    ],
+	"developers": [
+		"Bakunawa Studios"
+	],
+    "members": [
+		"Juan Carlos Arimado",
+		"Jacob Cammayo",
+		"Hunch Lorenzana",
+		"Marie Francezca Cortes"
+    ],
+    "supported_controls": [
+        "Keyboard",
+        "Mouse"
+    ],
+	"game_file": "game/Loophole.exe"
+}

@@ -1,0 +1,20 @@
+{
+    "name": "Dine In Devil",
+    "description": "EARLY TESTING\nYou've been hired to work at Dine-In-Devil where you cook foods and slay demons! What a treat!\nYou need to serve customers by cooking, you need resources by killing demons\nControls :\nW,A,S,D = Movement\nLeft_Mouse_Click\u00a0= Shoot\nRight_Mouse_Click = Melee (Always kill enemies with melee, if you want to harvest resources)\nR = Reload\nE = Interact\nESC = Main Menu\nShift = Dash\nThere's a room where you can heal though it may cost some time.This is game is still in progress, please expect some bugs\n",
+    "genre": [
+		"Cooking",
+        "Action"
+    ],
+    "developers": [
+        "Jurou Kohishirou x Rey1Nine4"
+    ],
+	"members": [
+		"Justin Joseph Salonga"
+	],
+    "supported_controls": [
+        "Keyboard",
+        "Mouse"
+    ],
+    "download_link": "https://jurou-kohishiro.itch.io/dine-in-devil",
+	"game_file": "game/DineDevil.exe"
+}

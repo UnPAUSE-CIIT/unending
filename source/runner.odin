@@ -7,21 +7,21 @@ import "core:fmt"
 import "core:log"
 import "core:os"
 import "core:os/os2"
-import "core:sync"
 import "core:sync/chan"
 import "core:thread"
 
 is_game_launched: bool
+launched_game_handle: os2.Process
 game_wait_thread: ^thread.Thread
 game_wait_channel: chan.Chan(bool)
 
 @(private = "file")
 _create_game_waiter_thread :: proc(p: os2.Process, close_chan: chan.Chan(bool, .Send)) {
-	fmt.println("waiting for game to close")
+	log.debug("waiting for game to close")
 	state, err := os2.process_wait(p)
 	assert(err == nil)
 
-	fmt.println("[game runner] game has closed?", state.exited)
+	log.info("[game runner] game has closed?", state.exited)
 	chan.send(close_chan, state.exited)
 }
 
@@ -29,7 +29,7 @@ _create_game_waiter_thread :: proc(p: os2.Process, close_chan: chan.Chan(bool, .
 wait_for_game_close :: proc() {
 	game_closed_value, ok := chan.try_recv(game_wait_channel)
 	if ok {
-		fmt.println("[game runner] requested game close:", game_closed_value)
+		log.info("[game runner] requested game close:", game_closed_value)
 		is_game_launched = !game_closed_value
 		chan.close(game_wait_channel)
 	}
@@ -37,18 +37,28 @@ wait_for_game_close :: proc() {
 
 run_game_threaded :: proc(game: Game) {
 	game_path := fmt.tprintf("%s/%s", game.fullpath, game.game_file)
-	log.info("running game at ", game_path)
+	log.debug("running game at ", game_path)
 
 	if !os.exists(game_path) {
 		log.errorf("[game runner] {} does not exist!", game.name)
 		return
 	}
 
-	// @TODO run diff start process depending on OS
+	launch_cmd: []string
+
+	when ODIN_OS == .Windows {
+		launch_cmd = { game_path }
+	} else when ODIN_OS == .Darwin {
+		launch_cmd = { "open", game_path }
+	} else {
+		launch_cmd = { "umu-run", game_path }
+	}
+
 	process_handle, err := os2.process_start(
-		os2.Process_Desc{command = {"umu-run", game_path}, stdout = os2.stdout},
+		os2.Process_Desc{command = launch_cmd, stdout = os2.stdout},
 	)
 	assert(err == nil, fmt.tprint("error running game:", err))
+	launched_game_handle = process_handle
 	is_game_launched = true
         
 	game_wait_channel, _ = chan.create_unbuffered(chan.Chan(bool), context.allocator)
@@ -61,6 +71,18 @@ run_game_threaded :: proc(game: Game) {
 }
 
 destroy_game_runner :: proc() {
-	chan.destroy(game_wait_channel)
-	thread.destroy(game_wait_thread)
+	if game_wait_thread != nil {
+		err := os2.process_kill(launched_game_handle)
+		assert(err == nil, "failed to close game!")
+
+		thread.join(game_wait_thread)
+		thread.destroy(game_wait_thread)
+		game_wait_thread = nil
+	}
+
+	if !chan.is_closed(game_wait_channel) {
+		chan.close(game_wait_channel)
+		chan.destroy(game_wait_channel)
+		game_wait_channel = {}
+	}
 }
