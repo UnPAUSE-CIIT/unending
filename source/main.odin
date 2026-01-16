@@ -6,7 +6,8 @@ import "core:strings"
 
 import rl "vendor:raylib"
 
-g_config: Config
+config: Config
+launcher: Launcher
 
 currently_selected: int = 0
 is_viewing_game_details := false
@@ -16,14 +17,8 @@ game_camera: rl.Camera3D
 camera_target_position := V3f{0.0, 0.0, -1.0}
 do_camera_move := false
 
-idle_timer: f32 = 0
-last_demo_shift_trigger: i32 = -1
-AFK_DEMO_THRESHOLD :: f32(30.0)
-DEMO_SHIFT_DURATION :: 5
-is_demo_mode := false
-
 move_dir :: proc(dir: int) {
-	if is_game_launched {
+	if launcher.is_game_launched {
 		return
 	}
 
@@ -44,11 +39,8 @@ move_camera_to_curr :: proc() {
 	do_camera_move = true
 	current_tab = .General // force back to main screen
 
-	if is_demo_mode {
+	if !is_demo_mode {
 		idle_timer = 0
-	}
-	else {
-		is_demo_mode = false
 	}
 }
 
@@ -95,7 +87,7 @@ draw_complete_details :: proc(game: Game) {
 			current_tab = .Credits
 		}
 		if layout_push_text_button( &layout, text = "Launch" ) {
-			launch_game( g_games[currently_selected] )
+			launch_game( &launcher, g_games[currently_selected] )
 			move_camera_to_curr()
 		}
 		if layout_push_text_button( &layout, text = "View download link" ) {
@@ -133,10 +125,8 @@ draw_complete_details :: proc(game: Game) {
 			layout_push_text( &layout, strings.join(game.genres, ", ", context.temp_allocator), 24, "body_italic", .Left )
 		}
 		case .Credits:{
-			rl.DrawTextEx(fonts["body_italic"], "Members", {x, y}, 32, 1, rl.WHITE)
-			y += 32 + 18
-			members := to_cstr(strings.join(game.members, "\n", context.temp_allocator))
-			rl.DrawTextEx(fonts["body"], members, {x, y}, 24, 1, rl.WHITE)
+			layout_push_text( &layout, "Members", 32, "body_bold", .Left)
+			layout_push_text( &layout, strings.join(game.members, "\n", context.temp_allocator), 24, "body", .Left)
 		}
 		}
 
@@ -171,22 +161,26 @@ draw_bottom_bar :: proc() {
 	win_size := get_window_size()
 
 	bottom_nav_img: cstring = is_viewing_game_details ? "game_dt_bottom_nav" : "home_bottom_nav"
-	draw_image(bottom_nav_img, V2f{0,0}, win_size)
+	if !launcher.is_game_launched {
+		tint: rl.Color = is_demo_mode ? {255, 255, 255, 50} : rl.WHITE
+		draw_image(bottom_nav_img, V2f{0,0}, win_size, tint = tint)
+	}
 }
 
 main :: proc() {
 	// mac doesnt use app dir as working directory
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
 
-	init_config(&g_config)
+	launcher = {}
+	init_config(&config)
 	init_resources()
 
 	logger := log.create_console_logger()
 	context.logger = logger
 
 	// init raylib
-	rl.SetConfigFlags(g_config.rl_flags)
-	rl.InitWindow(g_config.window_size.x, g_config.window_size.y, g_config.window_title)
+	rl.SetConfigFlags(config.rl_flags)
+	rl.InitWindow(config.window_size.x, config.window_size.y, config.window_title)
 	defer rl.CloseWindow()
 
 	rl.InitAudioDevice()
@@ -226,25 +220,46 @@ main :: proc() {
 		}
 
 		// :Update
-		if !is_game_launched {
+		if !launcher.is_game_launched {
+			idle_timer += rl.GetFrameTime()
+
+			// :DEMO MODE
+			if idle_timer > AFK_DEMO_THRESHOLD {
+				if i32(idle_timer) % DEMO_SHIFT_DURATION == 0 &&
+				   i32(idle_timer) != last_demo_shift_trigger {
+					is_demo_mode = true
+					move_dir(1)
+					last_demo_shift_trigger = i32(idle_timer)
+				}
+			}
+
+			if is_showing_qr && rl.IsMouseButtonPressed(.LEFT) {
+				stop_demo_mode()
+				is_showing_qr = false
+			}
+			
 			if !is_showing_qr {
 				if on_left_pressed() {
+					stop_demo_mode()
 					move_dir(-1)
 				}
 				if on_right_pressed() {
+					stop_demo_mode()
 					move_dir(1)
 				}
 				if on_submit_pressed() {
+					stop_demo_mode()
 					if !is_viewing_game_details {
 						is_viewing_game_details = true
 					} else {
-						launch_game(g_games[currently_selected])
+						launch_game(&launcher, g_games[currently_selected])
 					}
 					move_camera_to_curr()
 				}
 			}
 
 			if on_cancel_pressed() {
+				stop_demo_mode()
 				if is_viewing_game_details {
 					is_viewing_game_details = false
 				}
@@ -254,13 +269,14 @@ main :: proc() {
 				move_camera_to_curr()
 			}
 		} else {
-			wait_for_game_close()
+			wait_for_game_close(&launcher)
 		}
 
 		ray := rl.GetScreenToWorldRay(rl.GetMousePosition(), game_camera)
 		for g, i in g_games {
 			hit := rl.GetRayCollisionBox(ray, g.tr_aabb)
 			if rl.IsMouseButtonPressed(.LEFT) && hit.hit {
+				stop_demo_mode()
 				if !do_camera_move && currently_selected == i {
 					is_viewing_game_details = true
 				}
@@ -268,22 +284,6 @@ main :: proc() {
 				move_camera_to_curr()
 				break
 			}
-		}
-
-		idle_timer += rl.GetFrameTime()
-
-		// :DEMO MODE
-		if idle_timer > AFK_DEMO_THRESHOLD {
-			if i32(idle_timer) % DEMO_SHIFT_DURATION == 0 &&
-			   i32(idle_timer) != last_demo_shift_trigger {
-				is_demo_mode = true
-				move_dir(1)
-				last_demo_shift_trigger = i32(idle_timer)
-			}
-		}
-
-		if is_showing_qr && rl.IsMouseButtonPressed(.LEFT) {
-			is_showing_qr = false
 		}
 
 		// :Draw
@@ -298,7 +298,7 @@ main :: proc() {
 			rl.WHITE,
 		)
 
-		rl.DrawTextEx(fonts["title"], g_config.window_title, {10, 10}, 24, 2, {255, 255, 255, 50})
+		rl.DrawTextEx(fonts["title"], config.window_title, {10, 10}, 24, 2, {255, 255, 255, 50})
 
 		// :bottom bar
 		draw_bottom_bar()
@@ -306,13 +306,13 @@ main :: proc() {
 		rl.BeginMode3D(game_camera)
 		for &game, i in g_games {
 			if i == currently_selected {
-				rot_speed: f32 = is_game_launched ? 900 : 30
+				rot_speed: f32 = launcher.is_game_launched ? 900 : 30
 				game.rotation += rl.GetFrameTime() * rot_speed
 			} else {
 				game.rotation = 0
 			}
 
-			if (is_viewing_game_details || is_game_launched) && i != currently_selected {
+			if (is_viewing_game_details || launcher.is_game_launched) && i != currently_selected {
 				continue
 			}
 
@@ -333,7 +333,7 @@ main :: proc() {
 			if is_viewing_game_details {
 				draw_complete_details(curr_game)
 			} else {
-				if !is_game_launched {
+				if !launcher.is_game_launched {
 					draw_nav_buttons()
 				}
 				draw_basic_details(curr_game)

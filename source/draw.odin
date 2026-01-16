@@ -6,7 +6,7 @@ get_window_size :: proc() -> V2f {
 	return { f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight()) }
 }
 
-draw_image :: proc(image_name: cstring, pos: V2f, size: V2f = V2f(0.0), rotation: f32 = 0.0) {
+draw_image :: proc(image_name: cstring, pos: V2f, size: V2f = V2f(0.0), rotation: f32 = 0.0, tint: rl.Color = rl.WHITE) {
 	image, ok := textures[image_name]
 	if !ok {
 		image = textures["missing"]
@@ -20,6 +20,6 @@ draw_image :: proc(image_name: cstring, pos: V2f, size: V2f = V2f(0.0), rotation
 	}
 
 	bounds := rl.Rectangle{pos.x, pos.y, s.x, s.y}
-	rl.DrawTexturePro(image, src, bounds, V2f(0), rotation, rl.WHITE)
+	rl.DrawTexturePro(image, src, bounds, V2f(0), rotation, tint)
 }
 

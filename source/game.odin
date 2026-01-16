@@ -42,7 +42,7 @@ INPUT_TEXTURES := map[Supported_Control]cstring {
 g_games: [dynamic]Game
 load_all_games :: proc() {
 	g_games = make([dynamic]Game)
-	dir_handle, dir_err := os.open(g_config.games_path)
+	dir_handle, dir_err := os.open(config.games_path)
 	if dir_err != nil {
 		log.error("dir err", dir_err)
 		return
@@ -84,8 +84,8 @@ load_all_games :: proc() {
 	}
 }
 
-launch_game :: proc(game: Game) {
-	run_game_threaded(game)
+launch_game :: proc(launcher: ^Launcher, game: Game) {
+	run_game_threaded(launcher, game)
 	is_viewing_game_details = false
 
 	rl.PlaySound(sounds["sfx_launch"])
