@@ -12,3 +12,14 @@ TODO:
 - create python tool for scraping stuff for itch downloader
 	- this should result into a "get-the-files.exe"
 --------
+
+JAN 17
+revamped the basic UI, new bottom bar!
+
+we can't really rotate text without using a render texture, so i just made the rotated text in Figma, then just drew the texture then rotated it afterwards LMAO
+
+in the future tho, what we can do for the bottom bar is:
+layout the text, the bg, then draw them to a render texture with BeginTextureMode(canvas)
+the `canvas` is just a Texture2D that you render afterwards with DrawTexturePro or something
+
+--------

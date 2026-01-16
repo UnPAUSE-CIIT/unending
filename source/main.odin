@@ -169,15 +169,9 @@ draw_nav_buttons :: proc() {
 
 draw_bottom_bar :: proc() {
 	win_size := get_window_size()
-	w: f32 = 1000.0
-	h: f32 = 500.0
 
-	rec := rl.Rectangle{
-		win_size.x - w / 2,
-		win_size.y,
-		w, h,
-	}
-	rl.DrawRectanglePro(rec, V2f(0), -25, rl.BLACK)
+	bottom_nav_img: cstring = is_viewing_game_details ? "game_dt_bottom_nav" : "home_bottom_nav"
+	draw_image(bottom_nav_img, V2f{0,0}, win_size)
 }
 
 main :: proc() {
@@ -308,27 +302,6 @@ main :: proc() {
 
 		// :bottom bar
 		draw_bottom_bar()
-
-		// bar_height := i32(72)
-		// bar_pos := V2f{0, f32(rl.GetScreenHeight() - bar_height)}
-		// rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
-		//
-		// // @TODO use sprites for this, use a spritesheet or use a font?
-		// bottom_bar_text: cstring =
-		// 	!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
-		//
-		// if is_game_launched {
-		// 	bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
-		// }
-		//
-		// rl.DrawTextEx(
-		// 	fonts["title"],
-		// 	bottom_bar_text,
-		// 	{bar_pos.x + 10, bar_pos.y + 16},
-		// 	32,
-		// 	2,
-		// 	rl.WHITE,
-		// )
 
 		rl.BeginMode3D(game_camera)
 		for &game, i in g_games {
