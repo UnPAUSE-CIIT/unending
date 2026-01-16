@@ -74,7 +74,7 @@ load_all_games :: proc() {
 		game_info.fullpath = strings.clone(entry.fullpath)
 
 		// this will load the same model for all games, Raylib has no way to copy/make unique materials
-		game_info.model = rl.LoadModel("assets/box_art_base.glb")
+		game_info.model = rl.LoadModel("assets/models/box_art_base.glb")
 		game_info.texture = rl.LoadTexture(to_cstr("%s/box_art.png", entry.fullpath))
 		game_info.model.materials[1].maps[rl.MaterialMapIndex.ALBEDO].texture = game_info.texture // 0 is default material
 

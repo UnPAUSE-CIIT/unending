@@ -167,6 +167,19 @@ draw_nav_buttons :: proc() {
 	}
 }
 
+draw_bottom_bar :: proc() {
+	win_size := get_window_size()
+	w: f32 = 1000.0
+	h: f32 = 500.0
+
+	rec := rl.Rectangle{
+		win_size.x - w / 2,
+		win_size.y,
+		w, h,
+	}
+	rl.DrawRectanglePro(rec, V2f(0), -25, rl.BLACK)
+}
+
 main :: proc() {
 	// mac doesnt use app dir as working directory
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
@@ -181,32 +194,16 @@ main :: proc() {
 	rl.SetConfigFlags(g_config.rl_flags)
 	rl.InitWindow(g_config.window_size.x, g_config.window_size.y, g_config.window_title)
 	defer rl.CloseWindow()
+
+	rl.InitAudioDevice()
 	rl.SetExitKey(.F10)
 
 	setup_gamepad()
 
-	// :load resources
-	rl.InitAudioDevice()
-	load_sound("sfx_launch")
-
-	// :font loading
-	load_font("title")
-	load_font("body", font_size = 48)
-	load_font("body_italic", font_size = 48)
-	rl.SetTextLineSpacing(16)
-
-	load_texture("bg")
-	load_texture("itch")
-
-	// ui icons
-	load_texture("left_chev")
-	load_texture("right_chev")
-	load_texture("keyboard")
-	load_texture("mouse")
-	load_texture("controller")
-
+	load_resources()
 	load_all_games()
 
+	rl.SetTextLineSpacing(16)
 	game_camera = rl.Camera3D {
 		up         = V3f{0.0, 1.0, 0.0},
 		target     = camera_target_position,
@@ -310,26 +307,28 @@ main :: proc() {
 		rl.DrawTextEx(fonts["title"], g_config.window_title, {10, 10}, 24, 2, {255, 255, 255, 50})
 
 		// :bottom bar
-		bar_height := i32(72)
-		bar_pos := V2f{0, f32(rl.GetScreenHeight() - bar_height)}
-		rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
+		draw_bottom_bar()
 
-		// @TODO use sprites for this, use a spritesheet or use a font?
-		bottom_bar_text: cstring =
-			!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
-
-		if is_game_launched {
-			bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
-		}
-
-		rl.DrawTextEx(
-			fonts["title"],
-			bottom_bar_text,
-			{bar_pos.x + 10, bar_pos.y + 16},
-			32,
-			2,
-			rl.WHITE,
-		)
+		// bar_height := i32(72)
+		// bar_pos := V2f{0, f32(rl.GetScreenHeight() - bar_height)}
+		// rl.DrawRectangle(0, i32(bar_pos.y), rl.GetScreenWidth(), bar_height, {0, 0, 0, 180})
+		//
+		// // @TODO use sprites for this, use a spritesheet or use a font?
+		// bottom_bar_text: cstring =
+		// 	!is_viewing_game_details ? "A,D / <,> - navigate\t\tEnter - view game\t\tF10 - quit" : "Enter - launch game\t\tEsc/Backspace - back to selection"
+		//
+		// if is_game_launched {
+		// 	bottom_bar_text = fmt.ctprintf("running {}...", g_games[currently_selected].name)
+		// }
+		//
+		// rl.DrawTextEx(
+		// 	fonts["title"],
+		// 	bottom_bar_text,
+		// 	{bar_pos.x + 10, bar_pos.y + 16},
+		// 	32,
+		// 	2,
+		// 	rl.WHITE,
+		// )
 
 		rl.BeginMode3D(game_camera)
 		for &game, i in g_games {
