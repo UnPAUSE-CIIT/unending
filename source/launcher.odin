@@ -29,6 +29,7 @@ _create_game_waiter_thread :: proc(p: os2.Process, close_chan: chan.Chan(bool, .
 wait_for_game_close :: proc() {
 	game_closed_value, ok := chan.try_recv(game_wait_channel)
 	if ok {
+		set_window_focus(false)
 		log.info("[game runner] requested game close:", game_closed_value)
 		is_game_launched = !game_closed_value
 		chan.close(game_wait_channel)
@@ -60,7 +61,8 @@ run_game_threaded :: proc(game: Game) {
 	assert(err == nil, fmt.tprint("error running game:", err))
 	launched_game_handle = process_handle
 	is_game_launched = true
-        
+
+
 	game_wait_channel, _ = chan.create_unbuffered(chan.Chan(bool), context.allocator)
 	// start wait thread
 	game_wait_thread = thread.create_and_start_with_poly_data2(
@@ -68,6 +70,8 @@ run_game_threaded :: proc(game: Game) {
 		chan.as_send(game_wait_channel),
 		_create_game_waiter_thread,
 	)
+
+	set_window_focus(true)
 }
 
 destroy_game_runner :: proc() {
