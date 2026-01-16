@@ -41,7 +41,7 @@ init_config :: proc(c: ^Config) {
 	c.window_size.x = 1600
 	c.window_size.y = 900
 	if c.fullscreen {
-		c.rl_flags += {.BORDERLESS_WINDOWED_MODE, .WINDOW_UNDECORATED}
+		c.rl_flags += {.FULLSCREEN_MODE}
 		c.window_size.x = rl.GetMonitorWidth(0)
 		c.window_size.y = rl.GetMonitorHeight(0)
 	}
@@ -52,7 +52,15 @@ set_window_focus :: proc(state: bool) {
 	if state {
 		rl.SetWindowState({.WINDOW_UNFOCUSED})
 	} else {
+		m := rl.GetCurrentMonitor()
+		w := rl.GetMonitorWidth(m)
+		h := rl.GetMonitorHeight(m)
+
 		rl.RestoreWindow()
+		rl.SetWindowState({.FULLSCREEN_MODE, .WINDOW_UNDECORATED})
+
+		rl.SetWindowSize(w, h)
+		rl.SetWindowPosition(0,0)
 		rl.SetWindowFocused()
 	}
 }
